@@ -1,0 +1,94 @@
+name: Play Store release
+
+# Builds the signed Android App Bundle that Google Play accepts. Runs only when
+# you ask it to, so a normal push still just produces the test APK.
+#
+# It needs four repository secrets. Until they exist the job stops with a clear
+# message instead of failing halfway through:
+#
+#   ANDROID_KEYSTORE_BASE64  the .jks file, base64 encoded
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+#
+# See PLAY_STORE.md for how to create the keystore and add them.
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionName:
+        description: 'Version shown in the store, e.g. 1.0.0'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the signing secrets are present
+        run: |
+          missing=""
+          [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ] && missing="$missing ANDROID_KEYSTORE_BASE64"
+          [ -z "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" ] && missing="$missing ANDROID_KEYSTORE_PASSWORD"
+          [ -z "${{ secrets.ANDROID_KEY_ALIAS }}" ] && missing="$missing ANDROID_KEY_ALIAS"
+          [ -z "${{ secrets.ANDROID_KEY_PASSWORD }}" ] && missing="$missing ANDROID_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing — see PLAY_STORE.md"
+            exit 1
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up the Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Copy the web build into the Android project
+        run: npx cap sync android
+
+      - name: Restore the signing keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload.jks
+          test -s android/app/upload.jks
+
+      - name: Build the signed bundle
+        working-directory: android
+        env:
+          FW_STORE_FILE: upload.jks
+          FW_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          FW_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          FW_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon -PfwVersionCode=${{ github.run_number }} -PfwVersionName=${{ inputs.versionName }}
+
+      - name: Remove the keystore from the runner
+        if: always()
+        run: rm -f android/app/upload.jks
+
+      - name: Upload the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: fairway-games-release-aab-${{ inputs.versionName }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30

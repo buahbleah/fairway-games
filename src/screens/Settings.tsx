@@ -177,6 +177,9 @@ export function SettingsScreen() {
               handicap and the rounds you share are stored on our server so your group can see them —
               nothing else is collected, and there are no trackers or ads.
             </p>
+            <button className="btn btn--quiet btn--block" onClick={() => go('/privacy')}>
+              Privacy policy
+            </button>
             <p className="t-sm muted">
               Every round keeps working with no signal. Scores you enter offline are saved here and
               sent on as soon as you have a connection.

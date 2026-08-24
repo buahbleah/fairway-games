@@ -17,3 +17,8 @@ android/local.properties
 android/.idea
 android/captures
 ios
+
+# Signing material must never be committed.
+android/app/*.jks
+android/app/*.keystore
+*.jks

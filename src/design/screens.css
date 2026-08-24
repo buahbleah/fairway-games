@@ -1061,3 +1061,51 @@
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: var(--s-3);
 }
+
+/* -------------------------------------------------------- fairness / online */
+
+.fairness {
+  border-color: var(--line);
+  transition: border-color var(--dur-quick) var(--ease-out), background var(--dur-quick);
+}
+.fairness.is-on {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: linear-gradient(150deg, var(--brand-soft), var(--surface) 70%);
+}
+.fairness__mark {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.fairness.is-on .fairness__mark {
+  background: var(--brand);
+  color: var(--text-on-brand);
+}
+
+/* invitations on the home screen */
+.invite {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+  width: 100%;
+  text-align: left;
+}
+.invite__mark {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--surface);
+}

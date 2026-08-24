@@ -1,17 +1,111 @@
+import { useState } from 'react'
 import { GAMES } from '../games/registry'
 import { useStore } from '../state/store'
-import { AppBar, Segmented, Switch } from '../ui/components'
+import { useAccount } from '../state/account'
+import { useRouter } from '../state/router'
+import { AppBar, Avatar, Segmented, Stepper, Switch, useToast } from '../ui/components'
 import { BrandMark } from '../ui/art'
-import { Trash } from '../ui/icons'
+import { PlayerIcon, Trash, Trophy } from '../ui/icons'
 
 export function SettingsScreen() {
   const { prefs, setPrefs, presets, deletePreset, roster } = useStore()
+  const { account, updateProfile, logout } = useAccount()
+  const { go } = useRouter()
+  const { showToast, toastNode } = useToast()
+  const [handicap, setHandicap] = useState<number | null>(account?.handicapIndex ?? null)
+  const [savingHcp, setSavingHcp] = useState(false)
+
+  const saveHandicap = async (value: number | null) => {
+    setHandicap(value)
+    setSavingHcp(true)
+    try {
+      await updateProfile({ handicapIndex: value })
+      showToast({ message: 'Handicap saved' })
+    } catch {
+      showToast({ message: 'Could not save that right now' })
+    } finally {
+      setSavingHcp(false)
+    }
+  }
 
   return (
     <div className="page">
       <AppBar title="Settings" />
 
       <div className="stack stack-6">
+        {/* --------------------------------------------------------- account */}
+        <section className="stack stack-3">
+          <h2 className="section-title">Account</h2>
+
+          {account ? (
+            <>
+              <div className="card row" style={{ gap: 'var(--s-3)' }}>
+                <Avatar player={{ ...account }} size="lg" />
+                <div className="grow">
+                  <div className="t-head">{account.name}</div>
+                  <div className="t-sm muted">{account.email}</div>
+                </div>
+              </div>
+
+              <div className="field">
+                <div className="row-between">
+                  <div className="grow">
+                    <div className="field__label">Your handicap index</div>
+                    <div className="field__help">
+                      Only you can change yours. Games that are set to even things up give shots from
+                      this, on the hardest holes first.
+                    </div>
+                  </div>
+                  <Stepper
+                    value={handicap ?? 0}
+                    min={-10}
+                    max={54}
+                    step={0.5}
+                    label="Handicap index"
+                    onChange={saveHandicap}
+                  />
+                </div>
+                {savingHcp && <div className="field__help">Saving…</div>}
+              </div>
+
+              <div className="row" style={{ gap: 'var(--s-3)' }}>
+                <button className="btn btn--secondary grow" onClick={() => go('/friends')}>
+                  <PlayerIcon size={18} /> Friends
+                </button>
+                <button className="btn btn--secondary grow" onClick={() => go('/leagues')}>
+                  <Trophy size={18} /> Leagues
+                </button>
+              </div>
+
+              <button
+                className="btn btn--quiet btn--block"
+                onClick={async () => {
+                  await logout()
+                  showToast({ message: 'Signed out' })
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button className="card card--interactive" onClick={() => go('/account')}>
+              <div className="row" style={{ gap: 'var(--s-3)' }}>
+                <span className="resume__mark">
+                  <PlayerIcon size={22} />
+                </span>
+                <span className="grow">
+                  <span style={{ fontWeight: 700, display: 'block' }}>Sign in or create an account</span>
+                  <span className="t-sm muted">
+                    For friends, leagues and scoring a round together. Playing on your own needs no
+                    account at all.
+                  </span>
+                </span>
+              </div>
+            </button>
+          )}
+        </section>
+
+        {/* ------------------------------------------------------ appearance */}
         <section className="stack stack-3">
           <h2 className="section-title">Appearance</h2>
 
@@ -74,6 +168,7 @@ export function SettingsScreen() {
           </div>
         </section>
 
+        {/* ---------------------------------------------------------- presets */}
         <section className="stack stack-3">
           <h2 className="section-title">Saved setups</h2>
           {presets.length === 0 ? (
@@ -89,7 +184,11 @@ export function SettingsScreen() {
                     <div style={{ fontWeight: 700 }}>{p.name}</div>
                     <div className="t-sm muted">{game?.meta.name}</div>
                   </div>
-                  <button className="iconbtn iconbtn--ghost" aria-label={`Delete ${p.name}`} onClick={() => deletePreset(p.id)}>
+                  <button
+                    className="iconbtn iconbtn--ghost"
+                    aria-label={`Delete ${p.name}`}
+                    onClick={() => deletePreset(p.id)}
+                  >
                     <Trash size={20} />
                   </button>
                 </div>
@@ -99,29 +198,36 @@ export function SettingsScreen() {
         </section>
 
         <section className="stack stack-3">
-          <h2 className="section-title">Players</h2>
+          <h2 className="section-title">Guests on this phone</h2>
           <p className="t-sm muted">
             {roster.length
-              ? `${roster.length} players saved on this phone.`
-              : 'Players you add during setup are remembered here.'}
+              ? `${roster.length} saved. Guests are people you keep score for who do not have an account.`
+              : 'Guests you add during setup are remembered here.'}
           </p>
         </section>
 
+        {/* ------------------------------------------------------------ about */}
         <section className="stack stack-3">
           <h2 className="section-title">About</h2>
           <div className="card stack stack-3" style={{ alignItems: 'center', textAlign: 'center' }}>
             <BrandMark size={48} />
             <div>
               <div className="t-head">Fairway Games</div>
-              <div className="t-sm muted">Version 1.0</div>
+              <div className="t-sm muted">Version 1.1</div>
             </div>
             <p className="t-sm muted">
-              Works with no signal. Everything you enter stays on this phone — no account, no cloud,
-              nothing sent anywhere.
+              Rounds you play on your own stay on this phone. If you sign in, your name, email,
+              handicap and the rounds you share are stored on our server so your group can see them —
+              nothing else is collected, and there are no trackers or ads.
+            </p>
+            <p className="t-sm muted">
+              Every round keeps working with no signal. Scores you enter offline are saved here and
+              sent on as soon as you have a connection.
             </p>
           </div>
         </section>
       </div>
+      {toastNode}
     </div>
   )
 }

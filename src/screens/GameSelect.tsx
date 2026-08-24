@@ -4,7 +4,9 @@ import { AppBar, Rating } from '../ui/components'
 import { GAME_MARKS, PlayerIcon } from '../ui/icons'
 
 export function GameSelectScreen() {
-  const { go } = useRouter()
+  const { route, go } = useRouter()
+  // Started from a league page? Keep that league attached through setup.
+  const leagueSuffix = route.params.league ? `&league=${route.params.league}` : ''
   return (
     <div className="page">
       <AppBar title="Choose Your Game" />
@@ -52,7 +54,7 @@ export function GameSelectScreen() {
                 <button className="btn btn--secondary" onClick={() => go(`/game/${game.meta.id}`)}>
                   How it works
                 </button>
-                <button className="btn btn--primary" onClick={() => go(`/setup?game=${game.meta.id}`)}>
+                <button className="btn btn--primary" onClick={() => go(`/setup?game=${game.meta.id}${leagueSuffix}`)}>
                   Play
                 </button>
               </div>

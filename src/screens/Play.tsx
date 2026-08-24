@@ -3,8 +3,11 @@ import { getGame } from '../games/registry'
 import { getHud } from '../games/hudRegistry'
 import { useRouter } from '../state/router'
 import { haptic, useStore } from '../state/store'
+import { useRoundController, type RoundController } from '../state/roundController'
+import type { SyncState } from '../state/onlineRound'
+import { api } from '../net/api'
 import { AppBar, Avatar, Leaderboard, Sheet, useToast } from '../ui/components'
-import { ChevronLeft, ChevronRight, Check, History as HistoryIcon, Scorecard, Trophy, Undo } from '../ui/icons'
+import { ChevronLeft, ChevronRight, Check, History as HistoryIcon, PlayerIcon, Scorecard, Trophy, Undo } from '../ui/icons'
 import { holeByNumber, scoreName } from '../core/course'
 import { netContextFrom } from '../core/scoring'
 import { strokesOnHole } from '../core/handicap'
@@ -18,18 +21,30 @@ type Stage = 'pick' | 'teams' | 'score' | 'extras' | 'result'
 export function PlayScreen() {
   const { route, go } = useRouter()
   const store = useStore()
-  const round = store.getRound(route.params.round ?? '') ?? store.activeRound
-  const { showToast, toastNode } = useToast()
+  const requested = route.params.round ?? null
+  const roundId = requested ?? store.activeRound?.id ?? null
+  const ctrl = useRoundController(roundId)
 
-  const [sheet, setSheet] = useState<null | 'board' | 'history' | 'card' | 'menu'>(null)
-
-  if (!round) {
+  if (ctrl.loading && !ctrl.round) {
     return (
       <div className="page">
-        <AppBar title="Round" />
+        <AppBar title="Round" onBack={() => go('/')} />
+        <div className="empty">
+          <p className="empty__text">Catching up with the round…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!ctrl.round) {
+    return (
+      <div className="page">
+        <AppBar title="Round" onBack={() => go('/')} />
         <div className="empty">
           <p className="empty__title">That round has gone</p>
-          <p className="empty__text">It may have been deleted. Start a new one from the home screen.</p>
+          <p className="empty__text">
+            {ctrl.error ?? 'It may have been deleted. Start a new one from the home screen.'}
+          </p>
           <button className="btn btn--primary" onClick={() => go('/')}>
             Back home
           </button>
@@ -37,6 +52,16 @@ export function PlayScreen() {
       </div>
     )
   }
+
+  return <PlayRound key={ctrl.round.id} ctrl={ctrl} round={ctrl.round} />
+}
+
+/** Rendered only once a round exists, so every hook below is unconditional. */
+function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
+  const { go } = useRouter()
+  const store = useStore()
+  const { showToast, toastNode } = useToast()
+  const [sheet, setSheet] = useState<null | 'board' | 'history' | 'card' | 'menu' | 'invite'>(null)
 
   const game = getGame(round.gameId)
   const ctx: GameContext = {
@@ -74,25 +99,21 @@ export function PlayScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round.currentHole, round.id])
 
-  const patchEntry = (patch: Partial<HoleEntry>, undoLabel?: string) => {
-    store.patchEntry(round.id, round.currentHole, patch, undoLabel)
-  }
+  const patchEntry = (patch: Partial<HoleEntry>) => ctrl.patchEntry(round.currentHole, patch)
 
   const goHole = (n: number) => {
     if (!holeNumbers.includes(n)) return
-    store.goToHole(round.id, n)
+    ctrl.goToHole(n)
   }
 
   const finishHole = () => {
-    const current = round.entries.find((e) => e.hole === round.currentHole)
-    if (!current) return
-    store.completeHole(round.id, current)
+    ctrl.completeHole(round.currentHole)
     haptic('success', store.prefs.haptics)
     setStage('result')
   }
 
   const doUndo = () => {
-    const label = store.undo(round.id)
+    const label = ctrl.undo()
     if (label) showToast({ message: `Undone — ${label}` })
     setStage('score')
   }
@@ -104,7 +125,7 @@ export function PlayScreen() {
         onBack={() => go('/')}
         right={
           <div className="row" style={{ gap: 0 }}>
-            {store.canUndo(round.id) && (
+            {ctrl.canUndo && (
               <button className="iconbtn" onClick={doUndo} aria-label="Undo last change">
                 <Undo />
               </button>
@@ -118,6 +139,8 @@ export function PlayScreen() {
           </div>
         }
       />
+
+      {ctrl.online && <SyncBadge sync={ctrl.sync} pending={ctrl.pending} players={round.players.length} />}
 
       <header className="holehead">
         <div>
@@ -170,7 +193,7 @@ export function PlayScreen() {
           computed={computed}
           stage={stage}
           patchEntry={patchEntry}
-          patchGameState={(patch, label) => store.patchGameState(round.id, patch, label)}
+          patchGameState={(patch) => ctrl.patchGameState(patch)}
         />
       )}
 
@@ -180,7 +203,7 @@ export function PlayScreen() {
             round={round}
             computed={computed}
             onPick={(payload) => {
-              patchEntry({ game: { ...(entry?.game ?? {}), ...payload } }, `Hole ${round.currentHole} pick`)
+              patchEntry({ game: { ...(entry?.game ?? {}), ...payload } })
               haptic('medium', store.prefs.haptics)
               setStage('score')
             }}
@@ -203,7 +226,7 @@ export function PlayScreen() {
             round={round}
             ctx={ctx}
             entry={entry}
-            onScore={(playerId, value) => store.setScore(round.id, round.currentHole, playerId, value)}
+            onScore={(playerId, value) => ctrl.setScore(round.currentHole, playerId, value)}
           />
         )}
 
@@ -265,6 +288,10 @@ export function PlayScreen() {
         <ScorecardTable round={round} />
       </Sheet>
 
+      <Sheet open={sheet === 'invite'} onClose={() => setSheet(null)} title="Invite to this round">
+        <InvitePanel roundId={round.id} onDone={(msg) => { showToast({ message: msg }); setSheet(null) }} />
+      </Sheet>
+
       <Sheet open={sheet === 'menu'} onClose={() => setSheet(null)} title="Round">
         <div className="stack stack-2">
           <button className="btn btn--secondary btn--block" onClick={() => setSheet('history')}>
@@ -273,6 +300,11 @@ export function PlayScreen() {
           <button className="btn btn--secondary btn--block" onClick={() => setSheet('card')}>
             <Scorecard size={18} /> Scorecard
           </button>
+          {ctrl.online && (
+            <button className="btn btn--secondary btn--block" onClick={() => setSheet('invite')}>
+              <PlayerIcon size={18} /> Invite someone
+            </button>
+          )}
           <button className="btn btn--secondary btn--block" onClick={() => go(`/game/${round.gameId}`)}>
             How {game.meta.name} works
           </button>
@@ -286,6 +318,80 @@ export function PlayScreen() {
       </Sheet>
 
       {toastNode}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------ sync badge */
+
+function SyncBadge({ sync, pending, players }: { sync: SyncState; pending: number; players: number }) {
+  const label =
+    sync === 'offline'
+      ? pending
+        ? `Offline · ${pending} to send`
+        : 'Offline — scores are saved here'
+      : sync === 'syncing'
+        ? 'Saving…'
+        : sync === 'error'
+          ? 'Could not save — will retry'
+          : `Live · ${players} players`
+  const tone = sync === 'offline' ? 'chip--accent' : sync === 'error' ? 'chip--bad' : 'chip--good'
+  return (
+    <div className="row" style={{ marginBottom: 'var(--s-2)' }}>
+      <span className={`chip ${tone}`}>
+        <span className={`livedot${sync === 'idle' ? ' is-live' : ''}`} aria-hidden />
+        {label}
+      </span>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------- invite panel */
+
+function InvitePanel({ roundId, onDone }: { roundId: string; onDone: (message: string) => void }) {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const send = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const result = await api.inviteToRound(roundId, email.trim())
+      onDone(
+        result.status === 'seated'
+          ? 'They are in the round now.'
+          : result.status === 'already-playing'
+            ? 'They are already playing.'
+            : 'Invite saved — it is waiting for them.',
+      )
+      setEmail('')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not send that invite.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="stack stack-3">
+      <p className="t-sm muted">
+        Type their email. If they already have an account they join straight away and can score from
+        their own phone. If not, the invite waits for them.
+      </p>
+      <input
+        className="input"
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        placeholder="friend@example.com"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      {error && <p className="chip chip--bad" style={{ display: 'block', padding: 'var(--s-3)' }}>{error}</p>}
+      <button className="btn btn--primary btn--block" disabled={!email.trim() || busy} onClick={send}>
+        {busy ? 'Sending…' : 'Send invite'}
+      </button>
     </div>
   )
 }

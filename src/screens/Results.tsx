@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getGame } from '../games/registry'
 import { useRouter } from '../state/router'
-import { useStore } from '../state/store'
+import { useRoundController } from '../state/roundController'
 import { AppBar, Leaderboard, Segmented, Sheet, useToast } from '../ui/components'
 import { ResultHero } from '../ui/art'
 import { Share, Trophy } from '../ui/icons'
@@ -11,14 +11,14 @@ import type { GameContext } from '../core/types'
 
 export function ResultsScreen() {
   const { route, go } = useRouter()
-  const store = useStore()
-  const round = store.getRound(route.params.round ?? '')
+  const ctrl = useRoundController(route.params.round ?? null)
+  const round = ctrl.round
   const { showToast, toastNode } = useToast()
   const [sheet, setSheet] = useState<null | 'card' | 'log' | 'share'>(null)
   const [shareVariant, setShareVariant] = useState<'leaderboard' | 'winner'>('leaderboard')
 
   useEffect(() => {
-    if (round && round.status === 'active') store.finishRound(round.id)
+    if (round && round.status === 'active') ctrl.finish()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [round?.id])
 
@@ -128,7 +128,7 @@ export function ResultsScreen() {
             <button
               className="btn btn--quiet btn--block"
               onClick={() => {
-                store.reopenRound(round.id)
+                ctrl.reopen()
                 go(`/play?round=${round.id}`)
               }}
             >

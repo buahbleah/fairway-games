@@ -7,6 +7,7 @@ import './design/screens.css'
 import { App } from './App'
 import { RouterProvider } from './state/router'
 import { StoreProvider } from './state/store'
+import { AccountProvider } from './state/account'
 
 // Offline is the point: the service worker caches the whole app on first load,
 // so the round keeps working in a valley with no signal.
@@ -21,9 +22,11 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StoreProvider>
-      <RouterProvider>
-        <App />
-      </RouterProvider>
+      <AccountProvider>
+        <RouterProvider>
+          <App />
+        </RouterProvider>
+      </AccountProvider>
     </StoreProvider>
   </StrictMode>,
 )

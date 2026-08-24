@@ -1,8 +1,17 @@
+import { useEffect, useState } from 'react'
 import { GAMES } from '../games/registry'
 import { useRouter } from '../state/router'
 import { useStore } from '../state/store'
+import { useAccount } from '../state/account'
+import { api, type RoundSummary } from '../net/api'
 import { BrandMark, ContourBackdrop } from '../ui/art'
-import { GAME_MARKS, History as HistoryIcon, Settings as SettingsIcon } from '../ui/icons'
+import {
+  GAME_MARKS,
+  History as HistoryIcon,
+  PlayerIcon,
+  Settings as SettingsIcon,
+  Trophy,
+} from '../ui/icons'
 
 function greeting(d = new Date()): string {
   const h = d.getHours()
@@ -14,11 +23,37 @@ function greeting(d = new Date()): string {
 export function HomeScreen() {
   const { go } = useRouter()
   const { rounds, activeRound } = useStore()
+  const { account, invites, refreshInvites } = useAccount()
+  const [liveRounds, setLiveRounds] = useState<RoundSummary[]>([])
+
+  useEffect(() => {
+    if (!account) {
+      setLiveRounds([])
+      return
+    }
+    api
+      .rounds()
+      .then((d) => setLiveRounds(d.rounds.filter((r) => r.status === 'active')))
+      .catch(() => setLiveRounds([]))
+  }, [account])
+
   const finished = rounds.filter((r) => r.status === 'finished')
   const resumeGame = activeRound ? GAMES.find((g) => g.meta.id === activeRound.gameId) : null
   const holesPlayed = activeRound?.entries.filter((e) => e.complete).length ?? 0
   const holesTotal = activeRound?.course.holes.length ?? 18
   const ResumeMark = resumeGame ? GAME_MARKS[resumeGame.meta.id] : null
+  const waiting = invites?.total ?? 0
+
+  const joinRound = async (roundId: string, inviteId: string) => {
+    try {
+      await api.joinRound(roundId)
+      await refreshInvites()
+      go(`/play?round=${roundId}`)
+    } catch {
+      go(`/play?round=${roundId}`)
+    }
+    void inviteId
+  }
 
   return (
     <div className="page">
@@ -31,19 +66,33 @@ export function HomeScreen() {
               <span className="home-hero__wordmark">Fairway Games</span>
             </div>
             <div className="row" style={{ gap: 0 }}>
-              <button className="iconbtn" style={{ color: 'inherit' }} onClick={() => go('/history')} aria-label="Round history">
+              <button
+                className="iconbtn"
+                style={{ color: 'inherit' }}
+                onClick={() => go('/history')}
+                aria-label="Round history"
+              >
                 <HistoryIcon />
               </button>
-              <button className="iconbtn" style={{ color: 'inherit' }} onClick={() => go('/settings')} aria-label="Settings">
+              <button
+                className="iconbtn"
+                style={{ color: 'inherit' }}
+                onClick={() => go('/settings')}
+                aria-label="Settings"
+              >
                 <SettingsIcon />
+                {waiting > 0 && <span className="badge">{waiting}</span>}
               </button>
             </div>
           </div>
 
           <div className="stack stack-2">
-            <h1 className="home-hero__greeting">{greeting()}</h1>
+            <h1 className="home-hero__greeting">
+              {greeting()}
+              {account ? `, ${account.name.split(' ')[0]}` : ''}
+            </h1>
             <p className="home-hero__sub">
-              {activeRound ? 'You have a round on the go.' : 'Ready for another round?'}
+              {activeRound || liveRounds.length ? 'You have a round on the go.' : 'Ready for another round?'}
             </p>
           </div>
 
@@ -53,35 +102,113 @@ export function HomeScreen() {
         </div>
       </section>
 
-      {activeRound && resumeGame && ResumeMark && (
+      {/* ------------------------------------------------------- invitations */}
+      {invites && invites.rounds.length > 0 && (
         <section className="stack stack-3" style={{ marginBottom: 'var(--s-6)' }}>
-          <h2 className="section-title">Continue playing</h2>
-          <button className="resume" onClick={() => go(`/play?round=${activeRound.id}`)}>
-            <span
-              className="resume__mark"
-              style={{
-                background: `var(--game-${resumeGame.meta.accent}-soft)`,
-                color: `var(--game-${resumeGame.meta.accent})`,
-              }}
-            >
-              <ResumeMark size={26} />
+          <h2 className="section-title">You are invited</h2>
+          {invites.rounds.map((inv) => {
+            const game = GAMES.find((g) => g.meta.id === inv.gameId)
+            return (
+              <button key={inv.id} className="invite" onClick={() => joinRound(inv.roundId, inv.id)}>
+                <span className="invite__mark">
+                  <Trophy size={22} />
+                </span>
+                <span className="grow">
+                  <span style={{ fontWeight: 700, display: 'block' }}>
+                    {game?.meta.name ?? inv.gameId}
+                    {inv.leagueName ? ` · ${inv.leagueName}` : ''}
+                  </span>
+                  <span className="t-sm muted">{inv.invitedBy} asked you to play</span>
+                </span>
+                <span className="chip chip--accent">Join</span>
+              </button>
+            )
+          })}
+        </section>
+      )}
+
+      {invites && invites.friends.length > 0 && (
+        <section className="stack stack-3" style={{ marginBottom: 'var(--s-6)' }}>
+          <h2 className="section-title">Friend requests</h2>
+          <button className="invite" onClick={() => go('/friends')}>
+            <span className="invite__mark">
+              <PlayerIcon size={22} />
             </span>
             <span className="grow">
-              <span className="t-head" style={{ display: 'block' }}>
-                {resumeGame.meta.name}
+              <span style={{ fontWeight: 700, display: 'block' }}>
+                {invites.friends.length} waiting
               </span>
-              <span className="t-sm muted">
-                Hole {activeRound.currentHole} of {holesTotal} · {activeRound.players.length} players
-              </span>
-              <span className="resume__meter">
-                <span style={{ width: `${Math.round((holesPlayed / holesTotal) * 100)}%` }} />
-              </span>
+              <span className="t-sm muted">{invites.friends.map((f) => f.name).join(', ')}</span>
             </span>
-            <span className="chip chip--good">Resume</span>
+            <span className="chip chip--accent">Open</span>
           </button>
         </section>
       )}
 
+      {/* ------------------------------------------------------------ resume */}
+      {(activeRound || liveRounds.length > 0) && (
+        <section className="stack stack-3" style={{ marginBottom: 'var(--s-6)' }}>
+          <h2 className="section-title">Continue playing</h2>
+
+          {liveRounds.map((r) => {
+            const game = GAMES.find((g) => g.meta.id === r.gameId)
+            const Mark = game ? GAME_MARKS[game.meta.id] : null
+            if (!game || !Mark) return null
+            return (
+              <button key={r.id} className="resume" onClick={() => go(`/play?round=${r.id}`)}>
+                <span
+                  className="resume__mark"
+                  style={{
+                    background: `var(--game-${game.meta.accent}-soft)`,
+                    color: `var(--game-${game.meta.accent})`,
+                  }}
+                >
+                  <Mark size={26} />
+                </span>
+                <span className="grow">
+                  <span className="t-head" style={{ display: 'block' }}>
+                    {game.meta.name}
+                  </span>
+                  <span className="t-sm muted">
+                    Hole {r.currentHole} · {r.players.map((p) => p.name).join(', ')}
+                  </span>
+                </span>
+                <span className="chip chip--good">
+                  <span className="livedot is-live" aria-hidden /> Live
+                </span>
+              </button>
+            )
+          })}
+
+          {activeRound && resumeGame && ResumeMark && (
+            <button className="resume" onClick={() => go(`/play?round=${activeRound.id}`)}>
+              <span
+                className="resume__mark"
+                style={{
+                  background: `var(--game-${resumeGame.meta.accent}-soft)`,
+                  color: `var(--game-${resumeGame.meta.accent})`,
+                }}
+              >
+                <ResumeMark size={26} />
+              </span>
+              <span className="grow">
+                <span className="t-head" style={{ display: 'block' }}>
+                  {resumeGame.meta.name}
+                </span>
+                <span className="t-sm muted">
+                  Hole {activeRound.currentHole} of {holesTotal} · on this phone
+                </span>
+                <span className="resume__meter">
+                  <span style={{ width: `${Math.round((holesPlayed / holesTotal) * 100)}%` }} />
+                </span>
+              </span>
+              <span className="chip">Resume</span>
+            </button>
+          )}
+        </section>
+      )}
+
+      {/* ------------------------------------------------------------- games */}
       <section className="stack stack-3" style={{ marginBottom: 'var(--s-6)' }}>
         <h2 className="section-title">Games</h2>
         <div className="gamegrid">
@@ -110,18 +237,52 @@ export function HomeScreen() {
         </div>
       </section>
 
+      {/* -------------------------------------------------- friends + leagues */}
+      <section className="stack stack-3" style={{ marginBottom: 'var(--s-6)' }}>
+        <h2 className="section-title">Your group</h2>
+        {account ? (
+          <div className="row" style={{ gap: 'var(--s-3)' }}>
+            <button className="btn btn--secondary grow" onClick={() => go('/friends')}>
+              <PlayerIcon size={18} /> Friends
+            </button>
+            <button className="btn btn--secondary grow" onClick={() => go('/leagues')}>
+              <Trophy size={18} /> Leagues
+            </button>
+          </div>
+        ) : (
+          <button className="card card--interactive" onClick={() => go('/account')}>
+            <div className="row" style={{ gap: 'var(--s-3)' }}>
+              <span className="resume__mark">
+                <PlayerIcon size={22} />
+              </span>
+              <span className="grow">
+                <span style={{ fontWeight: 700, display: 'block' }}>Play with your group</span>
+                <span className="t-sm muted">
+                  Sign in to add friends, run a league and score together on every phone.
+                </span>
+              </span>
+            </div>
+          </button>
+        )}
+      </section>
+
       {finished.length > 0 && (
         <section className="stack stack-3">
           <h2 className="section-title">Recent rounds</h2>
           {finished.slice(0, 3).map((r) => {
             const game = GAMES.find((g) => g.meta.id === r.gameId)
             return (
-              <button key={r.id} className="card card--tight card--interactive" onClick={() => go(`/results?round=${r.id}`)}>
+              <button
+                key={r.id}
+                className="card card--tight card--interactive"
+                onClick={() => go(`/results?round=${r.id}`)}
+              >
                 <div className="row-between">
                   <div>
                     <div style={{ fontWeight: 700 }}>{game?.meta.name ?? r.gameId}</div>
                     <div className="t-sm muted">
-                      {new Date(r.createdAt).toLocaleDateString()} · {r.players.map((p) => p.name).join(', ')}
+                      {new Date(r.createdAt).toLocaleDateString()} ·{' '}
+                      {r.players.map((p) => p.name).join(', ')}
                     </div>
                   </div>
                   <span className="chip">{r.entries.filter((e) => e.complete).length} holes</span>

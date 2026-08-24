@@ -607,3 +607,43 @@
   font-size: var(--text-xs);
   color: var(--sand-400);
 }
+
+/* --------------------------------------------------------------- live dot */
+
+.livedot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.55;
+}
+.livedot.is-live {
+  animation: live-pulse 2.4s var(--ease-in-out) infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ------------------------------------------------------------ badge count */
+
+.badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--clay-500);
+  color: #fff;
+  font-family: var(--font-num);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  line-height: 1;
+}
+.iconbtn {
+  position: relative;
+}

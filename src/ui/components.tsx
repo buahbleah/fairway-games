@@ -21,7 +21,9 @@ export function AppBar({
   return (
     <header className={`appbar${bordered ? ' appbar--bordered' : ''}`}>
       {handleBack ? (
-        <button className="iconbtn" onClick={handleBack} aria-label="Back">
+        // Wrapped rather than passed directly: back() takes an optional fallback
+        // path, so handing it the click event would navigate to nonsense.
+        <button className="iconbtn" onClick={() => handleBack()} aria-label="Back">
           <ChevronLeft />
         </button>
       ) : (

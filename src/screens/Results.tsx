@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { getGame } from '../games/registry'
 import { useRouter } from '../state/router'
 import { useRoundController } from '../state/roundController'
+import { upFromRound } from '../state/navigation'
 import { AppBar, Leaderboard, Segmented, Sheet, useToast } from '../ui/components'
 import { ResultHero } from '../ui/art'
 import { Share, Trophy } from '../ui/icons'
@@ -10,7 +11,7 @@ import { ShareCard } from './ShareCard'
 import type { GameContext } from '../core/types'
 
 export function ResultsScreen() {
-  const { route, go } = useRouter()
+  const { route, go, up } = useRouter()
   const ctrl = useRoundController(route.params.round ?? null)
   const round = ctrl.round
   const { showToast, toastNode } = useToast()
@@ -72,7 +73,7 @@ export function ResultsScreen() {
 
   return (
     <div className="page">
-      <AppBar title="Result" onBack={() => go('/')} />
+      <AppBar title="Result" onBack={() => up(upFromRound(round))} />
 
       <section className="result-hero">
         <ResultHero />

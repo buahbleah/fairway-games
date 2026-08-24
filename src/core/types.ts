@@ -130,6 +130,8 @@ export interface Round {
   currentHole: number
   /** Round-level, game-owned data (nassau presses, team assignments, ...). */
   gameState: Record<string, any>
+  /** Set for a shared round that counts towards a league. Drives "up" navigation. */
+  leagueId?: string | null
 }
 
 /* --------------------------------------------------------------- computed view */

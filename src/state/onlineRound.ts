@@ -54,6 +54,7 @@ export function docToRound(doc: RoundDoc): Round {
     })),
     currentHole: doc.currentHole,
     gameState: doc.gameState ?? {},
+    leagueId: doc.leagueId,
   }
 }
 

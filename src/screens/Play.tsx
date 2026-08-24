@@ -4,6 +4,7 @@ import { getHud } from '../games/hudRegistry'
 import { useRouter } from '../state/router'
 import { haptic, useStore } from '../state/store'
 import { useRoundController, type RoundController } from '../state/roundController'
+import { upFromRound } from '../state/navigation'
 import type { SyncState } from '../state/onlineRound'
 import { api } from '../net/api'
 import { AppBar, Avatar, Leaderboard, Sheet, useToast } from '../ui/components'
@@ -18,8 +19,9 @@ import { DotsStage } from '../games/dots/dotsStage'
 
 type Stage = 'pick' | 'teams' | 'score' | 'extras' | 'result'
 
+
 export function PlayScreen() {
-  const { route, go } = useRouter()
+  const { route, go, up } = useRouter()
   const store = useStore()
   const requested = route.params.round ?? null
   const roundId = requested ?? store.activeRound?.id ?? null
@@ -28,7 +30,7 @@ export function PlayScreen() {
   if (ctrl.loading && !ctrl.round) {
     return (
       <div className="page">
-        <AppBar title="Round" onBack={() => go('/')} />
+        <AppBar title="Round" onBack={() => up(upFromRound(ctrl.round))} />
         <div className="empty">
           <p className="empty__text">Catching up with the round…</p>
         </div>
@@ -39,7 +41,7 @@ export function PlayScreen() {
   if (!ctrl.round) {
     return (
       <div className="page">
-        <AppBar title="Round" onBack={() => go('/')} />
+        <AppBar title="Round" onBack={() => up(upFromRound(ctrl.round))} />
         <div className="empty">
           <p className="empty__title">That round has gone</p>
           <p className="empty__text">
@@ -58,7 +60,7 @@ export function PlayScreen() {
 
 /** Rendered only once a round exists, so every hook below is unconditional. */
 function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
-  const { go } = useRouter()
+  const { go, up } = useRouter()
   const store = useStore()
   const { showToast, toastNode } = useToast()
   const [sheet, setSheet] = useState<null | 'board' | 'history' | 'card' | 'menu' | 'invite'>(null)
@@ -122,7 +124,7 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
     <div className="page">
       <AppBar
         title={game.meta.name}
-        onBack={() => go('/')}
+        onBack={() => up(upFromRound(round))}
         right={
           <div className="row" style={{ gap: 0 }}>
             {ctrl.canUndo && (

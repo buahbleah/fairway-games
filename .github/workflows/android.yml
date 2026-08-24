@@ -45,6 +45,16 @@ jobs:
       - name: Set up the Android SDK
         uses: android-actions/setup-android@v3
 
+      # Gradle generates a debug keystore on first use. On a fresh runner that
+      # means a different signing key every build, and Android refuses to
+      # install an update signed with a different key. Caching it keeps the
+      # signature stable so each new APK installs over the last one.
+      - name: Keep the debug signing key stable
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: debug-keystore-v1
+
       - name: Copy the web build into the Android project
         run: npx cap sync android
 
@@ -52,12 +62,12 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon -PfwVersionCode=${{ github.run_number }} -PfwVersionName=1.0.${{ github.run_number }}
 
       - name: Upload the APK
         uses: actions/upload-artifact@v4
         with:
-          name: fairway-games-debug-apk
+          name: fairway-games-debug-apk-${{ github.run_number }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30

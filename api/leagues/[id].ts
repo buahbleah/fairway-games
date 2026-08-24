@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { handler, HttpError, json, param } from '../_lib/http'
-import { requireUser } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { handler, HttpError, json, param } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
 
 /**
  * One league: its members, and every round ever played in it with the finishing

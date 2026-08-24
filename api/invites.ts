@@ -1,6 +1,6 @@
-import { sql } from './_lib/db'
-import { handler, json } from './_lib/http'
-import { requireUser } from './_lib/auth'
+import { sql } from './_lib/db.js'
+import { handler, json } from './_lib/http.js'
+import { requireUser } from './_lib/auth.js'
 
 /**
  * Everything waiting for you: round invitations and friend requests. This is

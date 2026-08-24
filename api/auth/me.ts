@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, requireString } from '../_lib/http'
-import { currentUser, requireUser } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, requireString } from '../_lib/http.js'
+import { currentUser, requireUser } from '../_lib/auth.js'
 
 /**
  * GET   — who am I (null when signed out, not a 401: the app works logged out).

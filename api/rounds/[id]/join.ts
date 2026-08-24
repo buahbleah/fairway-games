@@ -1,7 +1,7 @@
-import { sql } from '../../_lib/db'
-import { handler, HttpError, json, param } from '../../_lib/http'
-import { requireUser } from '../../_lib/auth'
-import { loadRound } from '../../_lib/rounds'
+import { sql } from '../../_lib/db.js'
+import { handler, HttpError, json, param } from '../../_lib/http.js'
+import { requireUser } from '../../_lib/auth.js'
+import { loadRound } from '../../_lib/rounds.js'
 
 /**
  * Accept an invitation and take a seat. Also works for anyone in the round's

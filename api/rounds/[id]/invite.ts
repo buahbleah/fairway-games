@@ -1,7 +1,7 @@
-import { sql } from '../../_lib/db'
-import { body, handler, HttpError, json, normaliseEmail, param } from '../../_lib/http'
-import { requireUser } from '../../_lib/auth'
-import { assertAccess, loadRound } from '../../_lib/rounds'
+import { sql } from '../../_lib/db.js'
+import { body, handler, HttpError, json, normaliseEmail, param } from '../../_lib/http.js'
+import { requireUser } from '../../_lib/auth.js'
+import { assertAccess, loadRound } from '../../_lib/rounds.js'
 
 /**
  * Invite someone to a round by email. If they already have an account and a

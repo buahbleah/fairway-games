@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http'
-import { createSession, hashPassword } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http.js'
+import { createSession, hashPassword } from '../_lib/auth.js'
 
 /**
  * Sign-up with an email address and a password. There is no email verification

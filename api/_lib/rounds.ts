@@ -1,6 +1,6 @@
-import { sql } from './db'
-import { HttpError } from './http'
-import type { SessionUser } from './auth'
+import { sql } from './db.js'
+import { HttpError } from './http.js'
+import type { SessionUser } from './auth.js'
 
 /**
  * The wire shape of a round. Deliberately the same shape the offline client

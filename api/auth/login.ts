@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http'
-import { createSession, sweepSessions, verifyPassword } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http.js'
+import { createSession, sweepSessions, verifyPassword } from '../_lib/auth.js'
 
 export default handler(['POST'], async (req, res) => {
   const input = body(req)

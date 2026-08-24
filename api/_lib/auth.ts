@@ -1,8 +1,8 @@
 import { randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { sql } from './db'
-import { HttpError } from './http'
+import { sql } from './db.js'
+import { HttpError } from './http.js'
 
 const scrypt = promisify(scryptCb) as (
   password: string,

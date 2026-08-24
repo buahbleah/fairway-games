@@ -1,7 +1,7 @@
-import { sql } from '../../_lib/db'
-import { body, handler, HttpError, json, param } from '../../_lib/http'
-import { requireUser } from '../../_lib/auth'
-import { assertAccess, loadRound } from '../../_lib/rounds'
+import { sql } from '../../_lib/db.js'
+import { body, handler, HttpError, json, param } from '../../_lib/http.js'
+import { requireUser } from '../../_lib/auth.js'
+import { assertAccess, loadRound } from '../../_lib/rounds.js'
 
 /**
  * Write one hole.

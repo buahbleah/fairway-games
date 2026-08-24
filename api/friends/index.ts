@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, normaliseEmail } from '../_lib/http'
-import { requireUser } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, normaliseEmail } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
 
 /**
  * GET  — your friends, plus requests you have sent and received.

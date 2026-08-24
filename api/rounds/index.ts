@@ -1,7 +1,7 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, requireString } from '../_lib/http'
-import { requireUser } from '../_lib/auth'
-import { loadRound } from '../_lib/rounds'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, requireString } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
+import { loadRound } from '../_lib/rounds.js'
 
 /**
  * GET  — every round you can see: hosted, played in, or in one of your leagues.

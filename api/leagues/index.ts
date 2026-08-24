@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
-import { sql } from '../_lib/db'
-import { body, handler, json, requireString } from '../_lib/http'
-import { requireUser } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, json, requireString } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
 
 /**
  * GET  — the leagues you belong to, with member counts and round counts.

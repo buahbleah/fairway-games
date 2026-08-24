@@ -1,7 +1,7 @@
-import { sql } from '../../_lib/db'
-import { body, handler, json, param } from '../../_lib/http'
-import { requireUser } from '../../_lib/auth'
-import { assertAccess, loadRound, roundVersion } from '../../_lib/rounds'
+import { sql } from '../../_lib/db.js'
+import { body, handler, json, param } from '../../_lib/http.js'
+import { requireUser } from '../../_lib/auth.js'
+import { assertAccess, loadRound, roundVersion } from '../../_lib/rounds.js'
 
 /**
  * GET   — the whole round. Pass ?version=N and, if nothing has changed since,

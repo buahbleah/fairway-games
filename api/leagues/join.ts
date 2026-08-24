@@ -1,6 +1,6 @@
-import { sql } from '../_lib/db'
-import { body, handler, HttpError, json, requireString } from '../_lib/http'
-import { requireUser } from '../_lib/auth'
+import { sql } from '../_lib/db.js'
+import { body, handler, HttpError, json, requireString } from '../_lib/http.js'
+import { requireUser } from '../_lib/auth.js'
 
 /** Join a league with its code. Codes are case-insensitive and space-tolerant. */
 export default handler(['POST'], async (req, res) => {

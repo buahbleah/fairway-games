@@ -1,0 +1,281 @@
+/* =============================================================================
+   FAIRWAY GAMES — DESIGN TOKENS
+   The single source of truth for colour, type, space, radius, shadow + motion.
+   Nothing in the app hardcodes a colour or a pixel value that belongs here.
+   Full rationale in DESIGN_SYSTEM.md.
+   ========================================================================== */
+
+:root {
+  /* --- brand ramp: fairway green --------------------------------------- */
+  --green-950: #071410;
+  --green-900: #0b2018;
+  --green-800: #0e2b21;
+  --green-700: #14382b;
+  --green-600: #1a5540;
+  --green-500: #23845c;
+  --green-400: #3fa277;
+  --green-300: #7ec4a5;
+  --green-200: #b8ddc9;
+  --green-100: #dcede4;
+  --green-050: #eef7f1;
+
+  /* --- accent: bunker sand / muted gold --------------------------------- */
+  --sand-700: #8a6a2c;
+  --sand-600: #a9823a;
+  --sand-500: #c79a4b;
+  --sand-400: #d9b472;
+  --sand-300: #e7cd9c;
+  --sand-100: #f4e8d1;
+
+  /* --- supporting ------------------------------------------------------- */
+  --sky-500: #3e7ca6;
+  --sky-300: #8fb9d3;
+  --clay-500: #b4453c;
+  --clay-300: #dd9089;
+  --flag-500: #e0a92b;
+  --ink-900: #14170f;
+  --ink-700: #2c3128;
+  --ink-500: #5c6259;
+  --ink-300: #969c92;
+  --ink-200: #c6cac2;
+  --cream-100: #fffdf8;
+  --cream-200: #f8f4ea;
+  --cream-300: #efe9dc;
+  --cream-400: #e2dacb;
+
+  /* --- semantic: light "clubhouse" theme --------------------------------- */
+  --bg: var(--cream-200);
+  --bg-deep: var(--cream-300);
+  --surface: var(--cream-100);
+  --surface-2: var(--cream-200);
+  --surface-inverse: var(--green-800);
+  --line: var(--cream-400);
+  --line-strong: #d3cabb;
+
+  --text: var(--ink-900);
+  --text-muted: var(--ink-500);
+  --text-faint: var(--ink-300);
+  --text-on-dark: #f4f1e8;
+  --text-on-brand: #f4f1e8;
+
+  --brand: var(--green-600);
+  --brand-strong: var(--green-800);
+  --brand-soft: var(--green-100);
+  --brand-ring: rgba(26, 85, 64, 0.35);
+
+  --accent: var(--sand-600);
+  --accent-soft: var(--sand-100);
+
+  --good: var(--green-500);
+  --good-soft: var(--green-100);
+  --bad: var(--clay-500);
+  --bad-soft: #f7e4e2;
+  --warn: var(--flag-500);
+
+  /* per-game accents — each game gets an identity inside one system */
+  --game-wolf: #1f4536;
+  --game-wolf-soft: #dbe8e1;
+  --game-skins: #a9823a;
+  --game-skins-soft: #f4e8d1;
+  --game-nassau: #3e7ca6;
+  --game-nassau-soft: #dfebf3;
+  --game-vegas: #8e4033;
+  --game-vegas-soft: #f7e2dc;
+  --game-dots: #6b6a2f;
+  --game-dots-soft: #eeedd6;
+  --game-match: #2f5d4a;
+  --game-match-soft: #dfeae4;
+
+  /* team colours */
+  --team-green: var(--green-600);
+  --team-green-soft: var(--green-100);
+  --team-sand: var(--sand-600);
+  --team-sand-soft: var(--sand-100);
+
+  /* avatars — distinguishable for the common colour-vision deficiencies */
+  --avatar-0: #1a5540;
+  --avatar-1: #a9823a;
+  --avatar-2: #3e7ca6;
+  --avatar-3: #8e4033;
+  --avatar-4: #5b5590;
+  --avatar-5: #47694a;
+
+  /* --- typography -------------------------------------------------------- */
+  --font-display: 'Bahnschrift', 'DIN Alternate', 'Roboto Condensed', 'Segoe UI Variable Display',
+    'Segoe UI Semibold', system-ui, -apple-system, sans-serif;
+  --font-text: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue',
+    Roboto, sans-serif;
+  --font-num: 'Bahnschrift', 'DIN Alternate', 'Roboto Condensed', 'Segoe UI', system-ui, sans-serif;
+
+  --text-2xs: 0.6875rem; /* 11 — labels only, never body */
+  --text-xs: 0.75rem;    /* 12 */
+  --text-sm: 0.875rem;   /* 14 */
+  --text-base: 1rem;     /* 16 — minimum body size */
+  --text-lg: 1.125rem;   /* 18 */
+  --text-xl: 1.375rem;   /* 22 */
+  --text-2xl: 1.75rem;   /* 28 */
+  --text-3xl: 2.25rem;   /* 36 */
+  --text-4xl: 3rem;      /* 48 */
+  --text-5xl: 4.25rem;   /* 68 — hole numbers, big scores */
+  --text-6xl: 5.5rem;    /* 88 — result hero */
+
+  --tracking-display: 0.02em;
+  --tracking-label: 0.14em;
+  --leading-tight: 1.05;
+  --leading-snug: 1.25;
+  --leading-body: 1.55;
+
+  /* --- space (4pt grid) --------------------------------------------------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+  --s-10: 72px;
+
+  /* --- radius ------------------------------------------------------------- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* --- elevation ---------------------------------------------------------- */
+  --shadow-1: 0 1px 2px rgba(20, 23, 15, 0.06), 0 1px 1px rgba(20, 23, 15, 0.04);
+  --shadow-2: 0 2px 6px rgba(20, 23, 15, 0.07), 0 6px 16px rgba(20, 23, 15, 0.06);
+  --shadow-3: 0 8px 24px rgba(20, 23, 15, 0.12), 0 2px 6px rgba(20, 23, 15, 0.06);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  /* --- touch targets ------------------------------------------------------ */
+  --tap-min: 48px;   /* WCAG / Material minimum */
+  --tap-comfort: 56px;
+  --tap-primary: 64px; /* on-course primary actions */
+
+  /* --- motion ------------------------------------------------------------- */
+  --dur-instant: 90ms;
+  --dur-quick: 140ms;   /* taps, chips, toggles */
+  --dur-card: 220ms;    /* card + screen transitions */
+  --dur-emphasis: 420ms;/* a result landing */
+  --dur-celebrate: 700ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* --- layout ------------------------------------------------------------- */
+  --page-max: 520px;
+  --page-pad: var(--s-4);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+/* =============================== DARK MODE ===============================
+   Not an inversion. Dark mode is its own composition: near-black forest
+   ground, warm off-white type, muted green panels and sand highlights —
+   what the app looks like in the clubhouse or on an evening nine.
+   ======================================================================== */
+
+:root[data-theme='dark'] {
+  --bg: #0a1310;
+  --bg-deep: #060d0b;
+  --surface: #12201a;
+  --surface-2: #182b23;
+  --surface-inverse: #dcede4;
+  --line: #21362c;
+  --line-strong: #2d4a3c;
+
+  --text: #f1ede3;
+  --text-muted: #a3b0a8;
+  --text-faint: #71807a;
+  --text-on-dark: #f1ede3;
+  --text-on-brand: #f1ede3;
+
+  --brand: var(--green-400);
+  --brand-strong: var(--green-300);
+  --brand-soft: #163024;
+  --brand-ring: rgba(63, 162, 119, 0.4);
+
+  --accent: var(--sand-400);
+  --accent-soft: #33291a;
+
+  --good: var(--green-400);
+  --good-soft: #163024;
+  --bad: #e08078;
+  --bad-soft: #3a201e;
+  --warn: var(--sand-400);
+
+  --game-wolf: #6fb094;
+  --game-wolf-soft: #163024;
+  --game-skins: #d9b472;
+  --game-skins-soft: #33291a;
+  --game-nassau: #8fb9d3;
+  --game-nassau-soft: #1a2b35;
+  --game-vegas: #dd9089;
+  --game-vegas-soft: #33211e;
+  --game-dots: #c9c77e;
+  --game-dots-soft: #2c2c19;
+  --game-match: #8ac2a9;
+  --game-match-soft: #173026;
+
+  --team-green: var(--green-400);
+  --team-green-soft: #163024;
+  --team-sand: var(--sand-400);
+  --team-sand-soft: #33291a;
+
+  --avatar-0: #3fa277;
+  --avatar-1: #d9b472;
+  --avatar-2: #8fb9d3;
+  --avatar-3: #dd9089;
+  --avatar-4: #a49ce0;
+  --avatar-5: #9dc48f;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.35);
+  --shadow-3: 0 10px 30px rgba(0, 0, 0, 0.55);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ============================= SUNLIGHT MODE =============================
+   Optional. For 30°C, no shade, sunglasses on. Raises contrast, removes
+   soft fills and shadows, thickens type. Layered on top of light or dark.
+   ======================================================================== */
+
+:root[data-contrast='sunlight'] {
+  --bg: #ffffff;
+  --bg-deep: #f2f2f2;
+  --surface: #ffffff;
+  --surface-2: #ffffff;
+  --line: #1a1a1a;
+  --line-strong: #000000;
+  --text: #000000;
+  --text-muted: #262626;
+  --text-faint: #3d3d3d;
+  --brand: #0d3b2a;
+  --brand-strong: #06251a;
+  --brand-soft: #ffffff;
+  --accent: #7a5a17;
+  --accent-soft: #ffffff;
+  --good: #0d5c3c;
+  --bad: #97231a;
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
+}
+
+:root[data-theme='dark'][data-contrast='sunlight'] {
+  --bg: #000000;
+  --bg-deep: #000000;
+  --surface: #0d0d0d;
+  --surface-2: #131313;
+  --line: #e8e8e8;
+  --line-strong: #ffffff;
+  --text: #ffffff;
+  --text-muted: #e0e0e0;
+  --text-faint: #bdbdbd;
+  --brand: #67d3a4;
+  --accent: #ffd27f;
+}

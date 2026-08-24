@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.vite
+coverage
+tsconfig.tsbuildinfo
+screenshots
+
+# Native build output. The Android project itself IS committed — it carries the
+# generated launcher icons and splash screens, and CI builds straight from it.
+android/build
+android/app/build
+android/.gradle
+android/local.properties
+android/.idea
+android/captures
+ios

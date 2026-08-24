@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Fairway Games">
+  <!--
+    APP ICON
+    A ball resting by a flagstick. Two shapes only — a light disc and a gold
+    triangle — so the mark survives at 48px, where the six dimples (one per game
+    mode) read as texture rather than detail.
+  -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0%" stop-color="#17402f"/>
+      <stop offset="55%" stop-color="#0e2b21"/>
+      <stop offset="100%" stop-color="#071410"/>
+    </linearGradient>
+    <linearGradient id="ballFace" x1="0.25" y1="0.05" x2="0.75" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ddd5c4"/>
+    </linearGradient>
+    <clipPath id="ballClip"><circle cx="206" cy="308" r="128"/></clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#ground)"/>
+
+  <!-- fairway contours: the app's background language, kept very quiet -->
+  <g fill="none" stroke="#c79a4b" stroke-opacity=".22" stroke-width="7">
+    <path d="M-20 452c80-54 168-58 244-24s150 18 308-46"/>
+    <path d="M-20 500c84-58 176-62 252-26s154 14 300-52"/>
+  </g>
+
+  <!-- flagstick, offset right so the ball never covers it -->
+  <path d="M356 424V72" stroke="#f4f1e8" stroke-width="16" stroke-linecap="round"/>
+  <path d="M356 80l128 40-128 44z" fill="#c79a4b"/>
+
+  <!-- ball -->
+  <circle cx="206" cy="308" r="128" fill="url(#ballFace)"/>
+  <g clip-path="url(#ballClip)" fill="#0e2b21" fill-opacity=".24">
+    <circle cx="150" cy="262" r="21"/>
+    <circle cx="206" cy="240" r="21"/>
+    <circle cx="262" cy="262" r="21"/>
+    <circle cx="150" cy="354" r="21"/>
+    <circle cx="206" cy="376" r="21"/>
+    <circle cx="262" cy="354" r="21"/>
+  </g>
+</svg>

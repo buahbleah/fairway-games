@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Fairway Games">
+  <defs>
+    <linearGradient id="mground" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0%" stop-color="#17402f"/>
+      <stop offset="55%" stop-color="#0e2b21"/>
+      <stop offset="100%" stop-color="#071410"/>
+    </linearGradient>
+    <linearGradient id="mball" x1="0.25" y1="0.05" x2="0.75" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ddd5c4"/>
+    </linearGradient>
+    <clipPath id="mballClip"><circle cx="222" cy="290" r="86"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="url(#mground)"/>
+  <path d="M322 368V152" stroke="#f4f1e8" stroke-width="11" stroke-linecap="round"/>
+  <path d="M322 157l86 27-86 30z" fill="#c79a4b"/>
+  <circle cx="222" cy="290" r="86" fill="url(#mball)"/>
+  <g clip-path="url(#mballClip)" fill="#0e2b21" fill-opacity=".24">
+    <circle cx="184" cy="259" r="14"/>
+    <circle cx="222" cy="244" r="14"/>
+    <circle cx="260" cy="259" r="14"/>
+    <circle cx="184" cy="321" r="14"/>
+    <circle cx="222" cy="336" r="14"/>
+    <circle cx="260" cy="321" r="14"/>
+  </g>
+</svg>

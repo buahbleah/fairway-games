@@ -1,0 +1,265 @@
+/* =============================================================================
+   BASE — reset, typography, layout primitives.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+ul,
+ol {
+  margin: 0;
+}
+
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ------------------------------------------------------------- typography */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+}
+
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.label {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.t-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-tight);
+}
+
+.t-head {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: var(--leading-snug);
+}
+
+.t-body {
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+}
+
+.t-sm {
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+.faint {
+  color: var(--text-faint);
+}
+.center {
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ layout */
+
+.app-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.page {
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 0 var(--page-pad) calc(var(--s-9) + var(--safe-bottom));
+  flex: 1;
+}
+
+/**
+ * Anything that must run edge to edge — the home hero, the app bar, the sticky
+ * action rail — pulls itself out with a negative margin and re-applies the page
+ * padding internally. The page itself always stays padded, so no child rule can
+ * accidentally cancel it out with a `padding` shorthand of its own.
+ */
+.bleed {
+  margin-left: calc(var(--page-pad) * -1);
+  margin-right: calc(var(--page-pad) * -1);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+.stack-1 { gap: var(--s-1); }
+.stack-2 { gap: var(--s-2); }
+.stack-3 { gap: var(--s-3); }
+.stack-4 { gap: var(--s-4); }
+.stack-5 { gap: var(--s-5); }
+.stack-6 { gap: var(--s-6); }
+.stack-7 { gap: var(--s-7); }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+  margin: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ motion */
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pop-settle {
+  0% { transform: scale(0.7); opacity: 0; }
+  60% { transform: scale(1.14); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes sheet-up {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes ball-drop {
+  0% { transform: translateY(-160px) scale(0.9); opacity: 0; }
+  55% { transform: translateY(0) scale(1); opacity: 1; }
+  70% { transform: translateY(-14px) scale(0.98); }
+  85% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes flag-rise {
+  from { transform: translateY(28px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.anim-enter {
+  animation: fade-up var(--dur-card) var(--ease-out) both;
+}
+.anim-pop {
+  animation: pop-settle var(--dur-emphasis) var(--ease-spring) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

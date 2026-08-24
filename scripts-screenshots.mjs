@@ -198,5 +198,23 @@ await startRound('vegas')
 await fillScores([[1, 1], [2, -1], [3, 2]])
 await shot('19-vegas-dark')
 
+// 20-23 the online screens (signed out, which is how they degrade with no API)
+await seed('light')
+await page.reload({ waitUntil: 'networkidle0' })
+await sleep(600)
+await goto('/account')
+await shot('20-account')
+await goto('/friends')
+await shot('21-friends-signed-out')
+await goto('/leagues')
+await shot('22-leagues-signed-out')
+
+// 24 the handicap control, which is the point of "make it fair"
+await goto('/setup?game=wolf')
+await click('Continue')
+await page.evaluate(() => document.querySelector('.fairness .switch')?.click())
+await sleep(400)
+await shot('23-handicaps')
+
 await browser.close()
 console.log('done →', OUT)

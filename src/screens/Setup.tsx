@@ -9,7 +9,7 @@ import { StepDots } from '../ui/art'
 import { GAME_MARKS, Check, Handicap as HandicapIcon, Plus, Trash } from '../ui/icons'
 import { SettingsForm } from './SettingsForm'
 import { applyHoleSet, defaultCourse, holeSetLabel, type HoleSet } from '../core/course'
-import { courseHandicap } from '../core/handicap'
+import { courseHandicap, playingHandicaps } from '../core/handicap'
 import type { GameId, Player, SettingsValues } from '../core/types'
 
 const STEP_TITLES = ['Game', 'Players', 'Settings', 'Course', 'Ready']
@@ -99,6 +99,21 @@ export function SetupScreen() {
     setSettings((s) => ({ ...s, handicapEnabled: on, scoring: on ? 'net' : 'gross' }))
 
   const missingHandicaps = handicapsOn ? players.filter((p) => p.handicapIndex == null) : []
+
+  /**
+   * What each player will actually receive once the allowance and the
+   * off-the-low-player rule are applied — not their raw course handicap, which
+   * is a different and more flattering number.
+   */
+  const shotsGiven = useMemo(
+    () =>
+      playingHandicaps(players, course, {
+        enabled: handicapsOn,
+        allowancePct: Number(settings.handicapAllowance ?? 100),
+        mode: (settings.handicapMode as 'difference' | 'full') ?? 'difference',
+      }),
+    [players, course, handicapsOn, settings.handicapAllowance, settings.handicapMode],
+  )
 
   const start = async () => {
     setBusy(true)
@@ -292,7 +307,7 @@ export function SetupScreen() {
                   <div className="field__label">Even it up with handicaps</div>
                   <div className="field__help">
                     {handicapsOn
-                      ? `Shots are given on the hardest holes, so a ${describeGame(gameId)} between a 6 and a 24 handicap is a real contest.`
+                      ? `Shots are given on the hardest holes first, off the lowest handicap in the group, so a ${describeGame(gameId)} between a 6 and a 24 is a real contest.`
                       : 'Off — every score counts as played. Turn this on to give shots to the higher handicaps.'}
                   </div>
                 </div>
@@ -301,16 +316,21 @@ export function SetupScreen() {
 
               {handicapsOn && (
                 <div className="stack stack-2" style={{ marginTop: 'var(--s-3)' }}>
-                  {players.map((p) => (
-                    <div key={p.id} className="row-between t-sm">
-                      <span>{p.name}</span>
-                      <span className="num" style={{ fontWeight: 700 }}>
-                        {p.handicapIndex == null
-                          ? 'no handicap'
-                          : `plays off ${courseHandicap(p, course)}`}
-                      </span>
-                    </div>
-                  ))}
+                  {players.map((p) => {
+                    const shots = shotsGiven[p.id] ?? 0
+                    return (
+                      <div key={p.id} className="row-between t-sm">
+                        <span>{p.name}</span>
+                        <span className="num" style={{ fontWeight: 700 }}>
+                          {p.handicapIndex == null
+                            ? 'no handicap'
+                            : shots === 0
+                              ? 'scratch — gives shots'
+                              : `gets ${shots} shot${shots === 1 ? '' : 's'}`}
+                        </span>
+                      </div>
+                    )
+                  })}
                   {missingHandicaps.length > 0 && (
                     <p className="t-sm" style={{ color: 'var(--bad)' }}>
                       {missingHandicaps.map((p) => p.name).join(', ')}{' '}

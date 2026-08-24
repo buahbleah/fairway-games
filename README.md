@@ -27,6 +27,7 @@ for a phone held in one hand.
 | `npm run test:watch` | Tests in watch mode |
 | `node scripts-gen-icons.mjs` | Re-rasterise the app icons from their source SVGs |
 | `node scripts-screenshots.mjs` | Capture the key screens into `screenshots/` (dev server must be running) |
+| `node scripts-store-assets.mjs` | Build the Play Store feature graphic and screenshots into `store/` |
 | `node scripts-offline-check.mjs` | Prove the built app plays a hole with the network switched off (`npm run preview` must be running) |
 
 ## Playing together
@@ -186,3 +187,6 @@ on.
   recommendation for games #7, #8 and #9.
 - **`db/schema.sql`** — the database schema, with the trigger that powers the
   cheap version-poll.
+- **`PLAY_STORE.md`** — the release checklist: signing key, secrets, Data
+  Safety answers and Google's 14-day tester rule.
+- **`STORE_LISTING.md`** — the store copy, ready to paste.

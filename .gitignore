@@ -22,3 +22,5 @@ ios
 android/app/*.jks
 android/app/*.keystore
 *.jks
+
+store

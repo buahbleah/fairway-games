@@ -25,7 +25,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
     const ids = accepted.map((r) => r.other_id).filter(Boolean)
     const friends = ids.length
       ? ((await sql`
-          SELECT id, email, name, handicap_index, color_index
+          SELECT id, email, name, handicap_index, color_index, avatar_url
           FROM users WHERE id = ANY(${ids}::uuid[])
           ORDER BY name
         `) as any[])
@@ -33,7 +33,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
 
     const incoming = (await sql`
       SELECT f.id, f.created_at, u.id AS from_id, u.name AS from_name, u.email AS from_email,
-             u.handicap_index, u.color_index
+             u.handicap_index, u.color_index, u.avatar_url
       FROM friendships f
       JOIN users u ON u.id = f.requester_id
       WHERE f.status = 'pending' AND f.addressee_id = ${user.id}
@@ -54,6 +54,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
         name: f.name,
         handicapIndex: f.handicap_index === null ? null : Number(f.handicap_index),
         colorIndex: f.color_index,
+        avatarUrl: f.avatar_url ?? null,
       })),
       incoming: incoming.map((r) => ({
         id: r.id,
@@ -63,6 +64,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
           email: r.from_email,
           handicapIndex: r.handicap_index === null ? null : Number(r.handicap_index),
           colorIndex: r.color_index,
+          avatarUrl: r.avatar_url ?? null,
         },
         createdAt: r.created_at,
       })),

@@ -113,6 +113,7 @@ export interface Account {
   name: string
   handicapIndex: number | null
   colorIndex: number
+  avatarUrl: string | null
 }
 
 export interface Friend {
@@ -121,6 +122,7 @@ export interface Friend {
   name: string
   handicapIndex: number | null
   colorIndex: number
+  avatarUrl?: string | null
 }
 
 export interface FriendsPayload {
@@ -160,6 +162,7 @@ export interface RoundPlayerDoc {
   name: string
   handicapIndex: number | null
   colorIndex: number
+  avatarUrl?: string | null
 }
 
 export interface RoundSummary {
@@ -231,8 +234,17 @@ export const api = {
       storeToken(null)
     }
   },
-  updateProfile: (input: { name?: string; handicapIndex?: number | null; colorIndex?: number }) =>
-    patch<{ user: Account }>('/auth/me', input),
+  updateProfile: (input: {
+    name?: string
+    handicapIndex?: number | null
+    colorIndex?: number
+    avatarUrl?: string | null
+  }) => patch<{ user: Account }>('/auth/me', input),
+  deleteAccount: async () => {
+    const out = await request<{ deleted: true }>('/auth/me', { method: 'DELETE' })
+    storeToken(null)
+    return out
+  },
 
   friends: () => get<FriendsPayload>('/friends'),
   addFriend: (email: string) => post<{ status: string; hasAccount: boolean }>('/friends', { email }),
@@ -276,6 +288,7 @@ export const api = {
   inviteToRound: (id: string, email: string) =>
     post<{ status: string; hasAccount: boolean; round?: RoundDoc }>(`/rounds/${id}/invite`, { email }),
   joinRound: (id: string) => post<{ round: RoundDoc }>(`/rounds/${id}/join`),
+  deleteRound: (id: string) => post<{ deleted: true }>(`/rounds/${id}/delete`),
 
   invites: () => get<InvitesPayload>('/invites'),
 }

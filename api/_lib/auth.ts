@@ -41,6 +41,7 @@ export interface SessionUser {
   name: string
   handicapIndex: number | null
   colorIndex: number
+  avatarUrl: string | null
 }
 
 function parseCookies(header: string | undefined): Record<string, string> {
@@ -93,7 +94,7 @@ export async function currentUser(req: VercelRequest): Promise<SessionUser | nul
   const token = sessionToken(req)
   if (!token) return null
   const rows = (await sql`
-    SELECT u.id, u.email, u.name, u.handicap_index, u.color_index
+    SELECT u.id, u.email, u.name, u.handicap_index, u.color_index, u.avatar_url
     FROM sessions s
     JOIN users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.expires_at > now()
@@ -106,6 +107,7 @@ export async function currentUser(req: VercelRequest): Promise<SessionUser | nul
     name: row.name,
     handicapIndex: row.handicap_index === null ? null : Number(row.handicap_index),
     colorIndex: row.color_index,
+    avatarUrl: row.avatar_url ?? null,
   }
 }
 

@@ -26,6 +26,7 @@ export interface RoundDoc {
     name: string
     handicapIndex: number | null
     colorIndex: number
+    avatarUrl: string | null
   }[]
   entries: {
     hole: number
@@ -65,7 +66,7 @@ export async function loadRound(roundId: string): Promise<RoundDoc> {
   if (!r) throw new HttpError(404, 'That round does not exist.')
 
   const players = (await sql`
-    SELECT player_id, user_id, name, handicap_index, color_index
+    SELECT player_id, user_id, name, handicap_index, color_index, avatar_url
     FROM round_players WHERE round_id = ${roundId}::uuid ORDER BY seat
   `) as any[]
 
@@ -94,6 +95,7 @@ export async function loadRound(roundId: string): Promise<RoundDoc> {
       name: p.name,
       handicapIndex: p.handicap_index === null ? null : Number(p.handicap_index),
       colorIndex: p.color_index,
+      avatarUrl: p.avatar_url ?? null,
     })),
     entries: entries.map((e) => ({
       hole: e.hole,

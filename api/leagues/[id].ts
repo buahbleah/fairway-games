@@ -22,7 +22,7 @@ export default handler(['GET'], async (req, res) => {
   if (!league) throw new HttpError(404, 'League not found.')
 
   const members = (await sql`
-    SELECT u.id, u.name, u.email, u.handicap_index, u.color_index, lm.role, lm.joined_at
+    SELECT u.id, u.name, u.email, u.handicap_index, u.color_index, u.avatar_url, lm.role, lm.joined_at
     FROM league_members lm
     JOIN users u ON u.id = lm.user_id
     WHERE lm.league_id = ${id}::uuid
@@ -41,7 +41,7 @@ export default handler(['GET'], async (req, res) => {
   const roundIds = rounds.map((r) => r.id)
   const players = roundIds.length
     ? ((await sql`
-        SELECT round_id, player_id, user_id, name, handicap_index, color_index, seat
+        SELECT round_id, player_id, user_id, name, handicap_index, color_index, avatar_url, seat
         FROM round_players WHERE round_id = ANY(${roundIds}::uuid[])
         ORDER BY seat
       `) as any[])
@@ -62,6 +62,7 @@ export default handler(['GET'], async (req, res) => {
       email: m.email,
       handicapIndex: m.handicap_index === null ? null : Number(m.handicap_index),
       colorIndex: m.color_index,
+      avatarUrl: m.avatar_url ?? null,
       role: m.role,
       joinedAt: m.joined_at,
     })),
@@ -82,6 +83,7 @@ export default handler(['GET'], async (req, res) => {
           name: p.name,
           handicapIndex: p.handicap_index === null ? null : Number(p.handicap_index),
           colorIndex: p.color_index,
+          avatarUrl: p.avatar_url ?? null,
         })),
     })),
   })

@@ -31,7 +31,7 @@ export default handler(['POST'], async (req, res) => {
   const rows = (await sql`
     INSERT INTO users (email, name, password_hash, handicap_index, color_index)
     VALUES (${email}, ${name}, ${passwordHash}, ${handicap}, ${colorIndex})
-    RETURNING id, email, name, handicap_index, color_index
+    RETURNING id, email, name, handicap_index, color_index, avatar_url
   `) as any[]
   const user = rows[0]
 
@@ -52,6 +52,7 @@ export default handler(['POST'], async (req, res) => {
       name: user.name,
       handicapIndex: user.handicap_index === null ? null : Number(user.handicap_index),
       colorIndex: user.color_index,
+      avatarUrl: user.avatar_url ?? null,
     },
   })
 })

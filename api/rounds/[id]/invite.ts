@@ -16,7 +16,7 @@ export default handler(['POST'], async (req, res) => {
   const email = normaliseEmail(body(req).email)
 
   const userRows = (await sql`
-    SELECT id, name, handicap_index, color_index FROM users WHERE lower(email) = ${email}
+    SELECT id, name, handicap_index, color_index, avatar_url FROM users WHERE lower(email) = ${email}
   `) as any[]
   const invitee = userRows[0]
 
@@ -52,7 +52,7 @@ export default handler(['POST'], async (req, res) => {
       UPDATE round_players
       SET user_id = ${invitee.id}, name = ${invitee.name},
           handicap_index = COALESCE(${invitee.handicap_index}, handicap_index),
-          color_index = ${invitee.color_index}
+          color_index = ${invitee.color_index}, avatar_url = ${invitee.avatar_url ?? null}
       WHERE round_id = ${id}::uuid AND player_id = ${openSeat[0].player_id}
     `
   } else {
@@ -61,9 +61,9 @@ export default handler(['POST'], async (req, res) => {
     `) as any[]
     if (count[0].n >= 4) throw new HttpError(409, 'That round is already full.')
     await sql`
-      INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat)
+      INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat, avatar_url)
       VALUES (${id}::uuid, ${`u_${invitee.id.slice(0, 8)}`}, ${invitee.id}, ${invitee.name},
-              ${invitee.handicap_index}, ${invitee.color_index}, ${count[0].n})
+              ${invitee.handicap_index}, ${invitee.color_index}, ${count[0].n}, ${invitee.avatar_url ?? null})
     `
   }
 

@@ -1,33 +1,16 @@
-import { useState } from 'react'
 import { GAMES } from '../games/registry'
 import { useStore } from '../state/store'
 import { useAccount } from '../state/account'
 import { useRouter } from '../state/router'
-import { AppBar, Avatar, Segmented, Stepper, Switch, useToast } from '../ui/components'
+import { AppBar, Avatar, Segmented, Switch, useToast } from '../ui/components'
 import { BrandMark } from '../ui/art'
 import { PlayerIcon, Trash, Trophy } from '../ui/icons'
 
 export function SettingsScreen() {
   const { prefs, setPrefs, presets, deletePreset, roster } = useStore()
-  const { account, updateProfile, logout } = useAccount()
+  const { account } = useAccount()
   const { go } = useRouter()
-  const { showToast, toastNode } = useToast()
-  const [handicap, setHandicap] = useState<number | null>(account?.handicapIndex ?? null)
-  const [savingHcp, setSavingHcp] = useState(false)
-
-  const saveHandicap = async (value: number | null) => {
-    setHandicap(value)
-    setSavingHcp(true)
-    try {
-      await updateProfile({ handicapIndex: value })
-      showToast({ message: 'Handicap saved' })
-    } catch {
-      showToast({ message: 'Could not save that right now' })
-    } finally {
-      setSavingHcp(false)
-    }
-  }
-
+  const { toastNode } = useToast()
   return (
     <div className="page">
       <AppBar title="Settings" />
@@ -47,26 +30,9 @@ export function SettingsScreen() {
                 </div>
               </div>
 
-              <div className="field">
-                <div className="row-between">
-                  <div className="grow">
-                    <div className="field__label">Your handicap index</div>
-                    <div className="field__help">
-                      Only you can change yours. Games that are set to even things up give shots from
-                      this, on the hardest holes first.
-                    </div>
-                  </div>
-                  <Stepper
-                    value={handicap ?? 0}
-                    min={-10}
-                    max={54}
-                    step={0.5}
-                    label="Handicap index"
-                    onChange={saveHandicap}
-                  />
-                </div>
-                {savingHcp && <div className="field__help">Saving…</div>}
-              </div>
+              <button className="btn btn--primary btn--block" onClick={() => go('/profile')}>
+                Edit profile, photo and handicap
+              </button>
 
               <div className="row" style={{ gap: 'var(--s-3)' }}>
                 <button className="btn btn--secondary grow" onClick={() => go('/friends')}>
@@ -77,15 +43,6 @@ export function SettingsScreen() {
                 </button>
               </div>
 
-              <button
-                className="btn btn--quiet btn--block"
-                onClick={async () => {
-                  await logout()
-                  showToast({ message: 'Signed out' })
-                }}
-              >
-                Sign out
-              </button>
             </>
           ) : (
             <button className="card card--interactive" onClick={() => go('/account')}>

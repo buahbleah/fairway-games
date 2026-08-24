@@ -30,7 +30,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
     const ids = rows.map((r) => r.id)
     const players = ids.length
       ? ((await sql`
-          SELECT round_id, player_id, user_id, name, color_index, handicap_index
+          SELECT round_id, player_id, user_id, name, color_index, handicap_index, avatar_url
           FROM round_players WHERE round_id = ANY(${ids}::uuid[]) ORDER BY seat
         `) as any[])
       : []
@@ -57,6 +57,7 @@ export default handler(['GET', 'POST'], async (req, res) => {
             name: p.name,
             handicapIndex: p.handicap_index === null ? null : Number(p.handicap_index),
             colorIndex: p.color_index,
+            avatarUrl: p.avatar_url ?? null,
           })),
       })),
     })
@@ -97,11 +98,12 @@ export default handler(['GET', 'POST'], async (req, res) => {
         ? null
         : Number(p.handicapIndex)
     await sql`
-      INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat)
+      INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat, avatar_url)
       VALUES (
         ${roundId}, ${requireString(p.id, 'Player id', 64)}, ${p.userId ?? null},
         ${requireString(p.name, 'Player name', 60)}, ${handicap},
-        ${Number(p.colorIndex) || 0}, ${i}
+        ${Number(p.colorIndex) || 0}, ${i},
+        ${typeof p.avatarUrl === 'string' && p.avatarUrl.startsWith('data:image/') ? p.avatarUrl : null}
       )
     `
   }

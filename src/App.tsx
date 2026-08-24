@@ -8,6 +8,7 @@ import { ResultsScreen } from './screens/Results'
 import { HistoryScreen } from './screens/HistoryScreen'
 import { SettingsScreen } from './screens/Settings'
 import { AccountScreen } from './screens/Account'
+import { ProfileScreen } from './screens/Profile'
 import { FriendsScreen } from './screens/Friends'
 import { LeaguesScreen } from './screens/Leagues'
 import { LeagueDetailScreen } from './screens/LeagueDetail'
@@ -25,6 +26,7 @@ export function App() {
   else if (path === '/history') screen = <HistoryScreen />
   else if (path === '/settings') screen = <SettingsScreen />
   else if (path === '/account') screen = <AccountScreen />
+  else if (path === '/profile') screen = <ProfileScreen />
   else if (path === '/friends') screen = <FriendsScreen />
   else if (path === '/leagues') screen = <LeaguesScreen />
   else if (path.startsWith('/league/')) screen = <LeagueDetailScreen leagueId={path.slice('/league/'.length)} />

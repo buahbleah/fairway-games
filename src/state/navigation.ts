@@ -21,7 +21,7 @@ export function parentPath(route: Route): string {
   if (path === '/games') return params.league ? `/league/${params.league}` : '/'
   if (path.startsWith('/game/')) return '/games'
   if (path === '/setup') return params.league ? `/league/${params.league}` : '/games'
-  if (path === '/account') return '/settings'
+  if (path === '/account' || path === '/profile') return '/settings'
   return '/'
 }
 

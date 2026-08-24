@@ -34,7 +34,12 @@ interface AccountValue {
   }) => Promise<void>
   login: (email: string, password: string) => Promise<void>
   logout: () => Promise<void>
-  updateProfile: (input: { name?: string; handicapIndex?: number | null; colorIndex?: number }) => Promise<void>
+  updateProfile: (input: {
+    name?: string
+    handicapIndex?: number | null
+    colorIndex?: number
+    avatarUrl?: string | null
+  }) => Promise<void>
   refreshInvites: () => Promise<void>
 }
 

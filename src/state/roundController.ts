@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import type { HoleEntry, Round } from '../core/types'
 import { useStore } from './store'
+import { api } from '../net/api'
 import { useOnlineRound, type SyncState } from './onlineRound'
 
 /**
@@ -28,6 +29,8 @@ export interface RoundController {
   patchGameState: (patch: Record<string, any>) => void
   finish: () => void
   reopen: () => void
+  /** Throw the round away for good. Leaving without discarding keeps it. */
+  discard: () => Promise<void>
   undo: () => string | null
 }
 
@@ -98,6 +101,26 @@ export function useRoundController(roundId: string | null): RoundController {
     else if (roundId) store.reopenRound(roundId)
   }, [online, remote, store, roundId])
 
+  const discard = useCallback(async () => {
+    if (!roundId) return
+    if (online) {
+      try {
+        await api.deleteRound(roundId)
+      } finally {
+        // Drop the local copy either way; a round the golfer chose to throw away
+        // should not reappear from the mirror on the next open.
+        try {
+          localStorage.removeItem(`fairway.mirror.${roundId}`)
+          localStorage.removeItem(`fairway.queue.${roundId}`)
+        } catch {
+          /* storage blocked */
+        }
+      }
+      return
+    }
+    store.deleteRound(roundId)
+  }, [online, store, roundId])
+
   const undo = useCallback((): string | null => {
     if (online) return remote.undo()
     return roundId ? store.undo(roundId) : null
@@ -120,6 +143,7 @@ export function useRoundController(roundId: string | null): RoundController {
       patchGameState,
       finish,
       reopen,
+      discard,
       undo,
     }),
     [
@@ -140,6 +164,7 @@ export function useRoundController(roundId: string | null): RoundController {
       patchGameState,
       finish,
       reopen,
+      discard,
       undo,
     ],
   )

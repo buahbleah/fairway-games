@@ -8,7 +8,7 @@ export default handler(['POST'], async (req, res) => {
   const password = requireString(input.password, 'Password', 200)
 
   const rows = (await sql`
-    SELECT id, email, name, password_hash, handicap_index, color_index
+    SELECT id, email, name, password_hash, handicap_index, color_index, avatar_url
     FROM users WHERE lower(email) = ${email}
   `) as any[]
   const row = rows[0]
@@ -29,6 +29,7 @@ export default handler(['POST'], async (req, res) => {
       name: row.name,
       handicapIndex: row.handicap_index === null ? null : Number(row.handicap_index),
       colorIndex: row.color_index,
+      avatarUrl: row.avatar_url ?? null,
     },
   })
 })

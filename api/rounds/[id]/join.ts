@@ -37,7 +37,7 @@ export default handler(['POST'], async (req, res) => {
       await sql`
         UPDATE round_players SET user_id = ${user.id}, name = ${user.name},
                handicap_index = COALESCE(${user.handicapIndex}, handicap_index),
-               color_index = ${user.colorIndex}
+               color_index = ${user.colorIndex}, avatar_url = ${user.avatarUrl}
         WHERE round_id = ${id}::uuid AND player_id = ${openSeat[0].player_id}
       `
     } else {
@@ -46,9 +46,9 @@ export default handler(['POST'], async (req, res) => {
       `) as any[]
       if (count[0].n >= 4) throw new HttpError(409, 'That round is already full.')
       await sql`
-        INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat)
+        INSERT INTO round_players (round_id, player_id, user_id, name, handicap_index, color_index, seat, avatar_url)
         VALUES (${id}::uuid, ${`u_${user.id.slice(0, 8)}`}, ${user.id}, ${user.name},
-                ${user.handicapIndex}, ${user.colorIndex}, ${count[0].n})
+                ${user.handicapIndex}, ${user.colorIndex}, ${count[0].n}, ${user.avatarUrl})
       `
     }
   }

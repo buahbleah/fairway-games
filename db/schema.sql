@@ -12,6 +12,7 @@ CREATE TABLE users (
   password_hash text NOT NULL,        -- scrypt$<salt hex>$<key hex>
   handicap_index numeric(4,1),        -- only the owner may change this
   color_index int NOT NULL DEFAULT 0,
+  avatar_url text,                    -- small data URL, resized on the device
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -91,6 +92,7 @@ CREATE TABLE round_players (
   name text NOT NULL,
   handicap_index numeric(4,1),
   color_index int NOT NULL DEFAULT 0,
+  avatar_url text,
   seat int NOT NULL DEFAULT 0,
   PRIMARY KEY (round_id, player_id)
 );

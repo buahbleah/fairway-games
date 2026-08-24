@@ -16,6 +16,8 @@ export interface Player {
   handicapIndex: number | null
   /** Avatar accent, index into design/avatarColors. */
   colorIndex: number
+  /** Optional profile picture, stored as a small data URL. */
+  avatarUrl?: string | null
 }
 
 export interface Hole {

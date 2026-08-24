@@ -158,7 +158,10 @@ export function SetupScreen() {
   }
 
   const next = () => setStep((s) => Math.min(5, s + 1))
-  const prev = () => (step === 1 ? go('/games') : setStep((s) => s - 1))
+  // Keep the league attached on the way back out, or Back from the game
+  // picker forgets which league the round was being started for.
+  const prev = () =>
+    step === 1 ? go(leagueId ? '/games?league=' + leagueId : '/games') : setStep((s) => s - 1)
 
   /* Everyone who could be added, without duplicates. */
   const friendPicks: Pick[] = friends.map((f) => ({

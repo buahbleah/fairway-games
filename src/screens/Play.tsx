@@ -8,7 +8,17 @@ import { upFromRound } from '../state/navigation'
 import type { SyncState } from '../state/onlineRound'
 import { api } from '../net/api'
 import { AppBar, Avatar, Leaderboard, Sheet, useToast } from '../ui/components'
-import { ChevronLeft, ChevronRight, Check, History as HistoryIcon, PlayerIcon, Scorecard, Trophy, Undo } from '../ui/icons'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  History as HistoryIcon,
+  PlayerIcon,
+  Scorecard,
+  Trash,
+  Trophy,
+  Undo,
+} from '../ui/icons'
 import { holeByNumber, scoreName } from '../core/course'
 import { netContextFrom } from '../core/scoring'
 import { strokesOnHole } from '../core/handicap'
@@ -63,7 +73,8 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
   const { go, up } = useRouter()
   const store = useStore()
   const { showToast, toastNode } = useToast()
-  const [sheet, setSheet] = useState<null | 'board' | 'history' | 'card' | 'menu' | 'invite'>(null)
+  const [sheet, setSheet] = useState<null | 'board' | 'history' | 'card' | 'menu' | 'invite' | 'leave'>(null)
+  const [leaving, setLeaving] = useState(false)
 
   const game = getGame(round.gameId)
   const ctx: GameContext = {
@@ -124,7 +135,7 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
     <div className="page">
       <AppBar
         title={game.meta.name}
-        onBack={() => up(upFromRound(round))}
+        onBack={() => setSheet('leave')}
         right={
           <div className="row" style={{ gap: 0 }}>
             {ctrl.canUndo && (
@@ -290,6 +301,46 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
         <ScorecardTable round={round} />
       </Sheet>
 
+      <Sheet open={sheet === 'leave'} onClose={() => setSheet(null)} title="Leave this round?">
+        <div className="stack stack-3">
+          <p className="t-sm muted">
+            {round.leagueId
+              ? 'You can pick it up again from the league whenever you like.'
+              : 'You can pick it up again from the home screen whenever you like.'}
+          </p>
+          <button
+            className="btn btn--primary btn--block"
+            disabled={leaving}
+            onClick={() => up(upFromRound(round))}
+          >
+            Keep it — resume later
+          </button>
+          <button className="btn btn--secondary btn--block" onClick={() => setSheet(null)}>
+            Stay in the round
+          </button>
+          <hr className="divider" />
+          <button
+            className="btn btn--danger btn--block"
+            disabled={leaving}
+            onClick={async () => {
+              setLeaving(true)
+              try {
+                await ctrl.discard()
+                up(upFromRound(round))
+              } catch (err) {
+                showToast({
+                  message: err instanceof Error ? err.message : 'Could not delete that round.',
+                })
+                setLeaving(false)
+              }
+            }}
+          >
+            <Trash size={18} /> {leaving ? 'Deleting…' : 'Discard this round'}
+          </button>
+          <p className="t-sm muted center">Discarding removes it for everyone playing.</p>
+        </div>
+      </Sheet>
+
       <Sheet open={sheet === 'invite'} onClose={() => setSheet(null)} title="Invite to this round">
         <InvitePanel roundId={round.id} onDone={(msg) => { showToast({ message: msg }); setSheet(null) }} />
       </Sheet>
@@ -315,6 +366,9 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
             onClick={() => go(`/results?round=${round.id}`)}
           >
             <Trophy size={18} /> Finish round
+          </button>
+          <button className="btn btn--quiet btn--block" onClick={() => setSheet('leave')}>
+            Leave without finishing
           </button>
         </div>
       </Sheet>

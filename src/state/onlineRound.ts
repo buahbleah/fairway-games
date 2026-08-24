@@ -43,6 +43,7 @@ export function docToRound(doc: RoundDoc): Round {
       name: p.name,
       handicapIndex: p.handicapIndex,
       colorIndex: p.colorIndex ?? i,
+      avatarUrl: p.avatarUrl ?? null,
     })),
     course,
     settings: doc.settings ?? {},

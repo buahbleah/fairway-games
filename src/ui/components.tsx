@@ -45,6 +45,15 @@ export function Avatar({ player, size = 'md' }: { player: Player; size?: 'sm' | 
     .map((w) => w[0]?.toUpperCase())
     .join('')
   const cls = size === 'sm' ? 'avatar avatar--sm' : size === 'lg' ? 'avatar avatar--lg' : 'avatar'
+
+  if (player.avatarUrl) {
+    return (
+      <span className={`${cls} avatar--photo`} aria-hidden>
+        <img src={player.avatarUrl} alt="" />
+      </span>
+    )
+  }
+
   return (
     <span className={cls} style={{ background: `var(--avatar-${player.colorIndex % 6})` }} aria-hidden>
       {initials || '?'}

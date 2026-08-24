@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { sql } from './_lib/db.js'
 import register from './auth/register.js'
 import login from './auth/login.js'
+import logout from './auth/logout.js'
 import me from './auth/me.js'
 import friends from './friends/index.js'
 import respondFriend from './friends/respond.js'
@@ -31,16 +32,18 @@ interface Captured {
   status: number
   body: any
   cookies: string[]
+  headers: Record<string, any>
 }
 
 function mockRes(): { res: VercelResponse; captured: Captured } {
-  const captured: Captured = { status: 0, body: null, cookies: [] }
+  const captured: Captured = { status: 0, body: null, cookies: [], headers: {} }
   const res = {
     status(code: number) {
       captured.status = code
       return this
     },
     setHeader(name: string, value: any) {
+      captured.headers[name.toLowerCase()] = value
       if (name.toLowerCase() === 'set-cookie') {
         captured.cookies.push(...(Array.isArray(value) ? value : [value]))
       }
@@ -66,12 +69,16 @@ function mockReq(init: {
   body?: any
   query?: Record<string, string>
   cookie?: string
+  headers?: Record<string, string>
 }): VercelRequest {
   return {
     method: init.method,
     body: init.body,
     query: init.query ?? {},
-    headers: init.cookie ? { cookie: init.cookie } : {},
+    headers: {
+      ...(init.cookie ? { cookie: init.cookie } : {}),
+      ...(init.headers ?? {}),
+    },
   } as unknown as VercelRequest
 }
 
@@ -79,11 +86,25 @@ type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void> | void
 
 async function call(
   fn: Handler,
-  init: { method: string; body?: any; query?: Record<string, string>; session?: string },
+  init: {
+    method: string
+    body?: any
+    query?: Record<string, string>
+    session?: string
+    bearer?: string
+    headers?: Record<string, string>
+  },
 ): Promise<Captured> {
   const { res, captured } = mockRes()
   await fn(
-    mockReq({ ...init, cookie: init.session ? `fairway_session=${init.session}` : undefined }),
+    mockReq({
+      ...init,
+      cookie: init.session ? `fairway_session=${init.session}` : undefined,
+      headers: {
+        ...(init.bearer ? { authorization: `Bearer ${init.bearer}` } : {}),
+        ...(init.headers ?? {}),
+      },
+    }),
     res,
   )
   return captured
@@ -398,5 +419,69 @@ suite('The API', () => {
   it('refuses the wrong HTTP method', async () => {
     const wrong = await call(login, { method: 'GET' })
     expect(wrong.status).toBe(405)
+  })
+
+  /* ------------------------------------------- the packaged app's auth path */
+
+  it('hands a token to the packaged app but not to a browser', async () => {
+    const native = await call(login, {
+      method: 'POST',
+      body: { email: marcEmail, password: 'longenough1' },
+      headers: { 'x-fairway-client': 'native' },
+    })
+    expect(typeof native.body.token).toBe('string')
+    expect(native.body.token.length).toBeGreaterThan(20)
+
+    const browser = await call(login, {
+      method: 'POST',
+      body: { email: marcEmail, password: 'longenough1' },
+    })
+    // A browser gets the httpOnly cookie and nothing script can read.
+    expect(browser.body.token).toBeUndefined()
+    expect(browser.cookies.some((c) => c.startsWith('fairway_session='))).toBe(true)
+  })
+
+  it('accepts that token as a bearer header, with no cookie at all', async () => {
+    const native = await call(login, {
+      method: 'POST',
+      body: { email: marcEmail, password: 'longenough1' },
+      headers: { 'x-fairway-client': 'native' },
+    })
+    const who = await call(me, { method: 'GET', bearer: native.body.token })
+    expect(who.status).toBe(200)
+    expect(who.body.user?.name).toBe('Marc')
+  })
+
+  it('rejects a made-up bearer token', async () => {
+    const who = await call(me, { method: 'GET', bearer: 'not-a-real-token' })
+    expect(who.body.user).toBeNull()
+    const denied = await call(friends, { method: 'GET', bearer: 'not-a-real-token' })
+    expect(denied.status).toBe(401)
+  })
+
+  it('signing out kills the bearer token too', async () => {
+    const native = await call(login, {
+      method: 'POST',
+      body: { email: marcEmail, password: 'longenough1' },
+      headers: { 'x-fairway-client': 'native' },
+    })
+    await call(logout, { method: 'POST', bearer: native.body.token })
+    const after = await call(me, { method: 'GET', bearer: native.body.token })
+    expect(after.body.user).toBeNull()
+  })
+
+  /* ----------------------------------------------------------------- CORS */
+
+  it('allows the packaged app origin with credentials', async () => {
+    const pre = await call(me, { method: 'OPTIONS', headers: { origin: 'https://localhost' } })
+    expect(pre.status).toBe(204)
+    expect(pre.headers['access-control-allow-origin']).toBe('https://localhost')
+    expect(pre.headers['access-control-allow-credentials']).toBe('true')
+  })
+
+  it('does not hand credentials to an arbitrary website', async () => {
+    const pre = await call(me, { method: 'OPTIONS', headers: { origin: 'https://evil.example' } })
+    expect(pre.headers['access-control-allow-origin']).toBeUndefined()
+    expect(pre.headers['access-control-allow-credentials']).toBeUndefined()
   })
 })

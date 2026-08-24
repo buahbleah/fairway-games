@@ -1,5 +1,5 @@
 import { sql } from '../_lib/db.js'
-import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http.js'
+import { body, handler, HttpError, isNativeClient, json, normaliseEmail, requireString } from '../_lib/http.js'
 import { createSession, hashPassword } from '../_lib/auth.js'
 
 /**
@@ -41,8 +41,11 @@ export default handler(['POST'], async (req, res) => {
     WHERE lower(addressee_email) = ${email} AND addressee_id IS NULL
   `
 
-  await createSession(res, user.id)
+  const token = await createSession(res, user.id)
   json(res, 201, {
+    // Browsers use the httpOnly cookie and ignore this; the packaged apps store
+    // it and send it back as a bearer header.
+    token: isNativeClient(req) ? token : undefined,
     user: {
       id: user.id,
       email: user.email,

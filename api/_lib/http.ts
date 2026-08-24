@@ -23,12 +23,45 @@ export class HttpError extends Error {
 type Handler = (req: VercelRequest, res: VercelResponse) => Promise<void> | void
 
 /**
+ * Origins allowed to call the API with credentials.
+ *
+ * The packaged Android and iOS apps serve their own pages from a localhost
+ * scheme, so from the API's point of view they are a different origin. They are
+ * listed explicitly rather than reflected, because allowing an arbitrary origin
+ * together with credentials would let any website act on a signed-in user's
+ * behalf.
+ */
+const ALLOWED_ORIGINS = new Set([
+  'https://localhost', // Capacitor Android
+  'capacitor://localhost', // Capacitor iOS
+  'ionic://localhost',
+  'http://localhost:5173', // Vite dev server
+  'http://localhost:4173', // vite preview
+])
+
+function applyCors(req: VercelRequest, res: VercelResponse) {
+  const origin = req.headers.origin
+  if (!origin) return
+  // Same-origin requests from the deployed site need nothing; anything else has
+  // to be on the list.
+  if (!ALLOWED_ORIGINS.has(origin)) return
+  res.setHeader('Access-Control-Allow-Origin', origin)
+  res.setHeader('Access-Control-Allow-Credentials', 'true')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Fairway-Client')
+  res.setHeader('Vary', 'Origin')
+}
+
+/**
  * Wraps a handler so any thrown error becomes a clean JSON response instead of
  * a stack trace, and so unexpected errors are never leaked to the client.
  */
 export function handler(methods: string[], fn: Handler): Handler {
   return async (req, res) => {
+    applyCors(req, res)
+
     if (req.method === 'OPTIONS') {
+      res.setHeader('Access-Control-Allow-Methods', [...methods, 'OPTIONS'].join(', '))
+      res.setHeader('Access-Control-Max-Age', '86400')
       res.setHeader('Allow', [...methods, 'OPTIONS'].join(', '))
       res.status(204).end()
       return
@@ -88,4 +121,13 @@ export function param(req: VercelRequest, name: string): string {
   const single = Array.isArray(value) ? value[0] : value
   if (!single) throw new HttpError(400, `Missing ${name}.`)
   return single
+}
+
+/**
+ * The packaged apps identify themselves so the session token can be returned in
+ * the response body. A browser never gets it — it uses the httpOnly cookie,
+ * which cannot be read by script at all.
+ */
+export function isNativeClient(req: VercelRequest): boolean {
+  return req.headers['x-fairway-client'] === 'native'
 }

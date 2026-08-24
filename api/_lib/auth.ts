@@ -66,14 +66,31 @@ export async function createSession(res: VercelResponse, userId: string): Promis
 }
 
 export async function destroySession(req: VercelRequest, res: VercelResponse) {
-  const token = parseCookies(req.headers.cookie)[COOKIE]
+  const token = sessionToken(req)
   if (token) await sql`DELETE FROM sessions WHERE token = ${token}`
   res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`)
 }
 
+/**
+ * The session token, from either source.
+ *
+ * A browser sends an httpOnly cookie, which script cannot read. The packaged
+ * Android and iOS apps live on a different origin from the API, where
+ * third-party cookies are unreliable, so they send the same token as a bearer
+ * header instead.
+ */
+export function sessionToken(req: VercelRequest): string | null {
+  const auth = req.headers.authorization
+  if (auth && auth.startsWith('Bearer ')) {
+    const bearer = auth.slice(7).trim()
+    if (bearer) return bearer
+  }
+  return parseCookies(req.headers.cookie)[COOKIE] ?? null
+}
+
 /** Returns the signed-in user, or null. Never throws for anonymous callers. */
 export async function currentUser(req: VercelRequest): Promise<SessionUser | null> {
-  const token = parseCookies(req.headers.cookie)[COOKIE]
+  const token = sessionToken(req)
   if (!token) return null
   const rows = (await sql`
     SELECT u.id, u.email, u.name, u.handicap_index, u.color_index

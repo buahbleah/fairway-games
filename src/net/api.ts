@@ -17,15 +17,65 @@ export class ApiError extends Error {
   }
 }
 
-const BASE = '/api'
+/**
+ * Where the API lives.
+ *
+ * On the web the app and the API share an origin, so a relative path is right.
+ * Inside the packaged Android/iOS app the pages are served from a localhost
+ * scheme, so the API has to be addressed absolutely — and because that makes
+ * every request cross-origin, the session travels as a bearer token rather than
+ * a cookie. Third-party cookies in an Android WebView are not dependable.
+ */
+const NATIVE: boolean = (() => {
+  try {
+    const cap = (globalThis as any).Capacitor
+    return !!cap?.isNativePlatform?.()
+  } catch {
+    return false
+  }
+})()
+
+const API_ORIGIN =
+  (import.meta as any).env?.VITE_API_ORIGIN ?? 'https://fairway-games-phils-projects-a6db7377.vercel.app'
+
+const BASE = NATIVE ? `${API_ORIGIN}/api` : '/api'
+
+const TOKEN_KEY = 'fairway.token.v1'
+
+function readToken(): string | null {
+  if (!NATIVE) return null
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function storeToken(token: string | null | undefined) {
+  if (!NATIVE) return
+  try {
+    if (token) localStorage.setItem(TOKEN_KEY, token)
+    else localStorage.removeItem(TOKEN_KEY)
+  } catch {
+    /* storage blocked — the session simply will not persist a restart */
+  }
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = readToken()
+  const headers: Record<string, string> = {}
+  if (init.body) headers['Content-Type'] = 'application/json'
+  if (NATIVE) {
+    headers['X-Fairway-Client'] = 'native'
+    if (token) headers.Authorization = `Bearer ${token}`
+  }
+
   let res: Response
   try {
     res = await fetch(`${BASE}${path}`, {
-      credentials: 'same-origin',
-      headers: init.body ? { 'Content-Type': 'application/json' } : undefined,
+      credentials: NATIVE ? 'include' : 'same-origin',
       ...init,
+      headers: { ...headers, ...(init.headers as Record<string, string> | undefined) },
     })
   } catch {
     throw new ApiError(0, 'No connection.', true)
@@ -164,10 +214,23 @@ export interface InvitesPayload {
 
 export const api = {
   me: () => get<{ user: Account | null }>('/auth/me'),
-  register: (input: { email: string; name: string; password: string; handicapIndex?: number | null }) =>
-    post<{ user: Account }>('/auth/register', input),
-  login: (input: { email: string; password: string }) => post<{ user: Account }>('/auth/login', input),
-  logout: () => post<{ ok: true }>('/auth/logout'),
+  register: async (input: { email: string; name: string; password: string; handicapIndex?: number | null }) => {
+    const out = await post<{ user: Account; token?: string }>('/auth/register', input)
+    storeToken(out.token)
+    return out
+  },
+  login: async (input: { email: string; password: string }) => {
+    const out = await post<{ user: Account; token?: string }>('/auth/login', input)
+    storeToken(out.token)
+    return out
+  },
+  logout: async () => {
+    try {
+      return await post<{ ok: true }>('/auth/logout')
+    } finally {
+      storeToken(null)
+    }
+  },
   updateProfile: (input: { name?: string; handicapIndex?: number | null; colorIndex?: number }) =>
     patch<{ user: Account }>('/auth/me', input),
 

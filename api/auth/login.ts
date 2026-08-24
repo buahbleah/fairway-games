@@ -1,5 +1,5 @@
 import { sql } from '../_lib/db.js'
-import { body, handler, HttpError, json, normaliseEmail, requireString } from '../_lib/http.js'
+import { body, handler, HttpError, isNativeClient, json, normaliseEmail, requireString } from '../_lib/http.js'
 import { createSession, sweepSessions, verifyPassword } from '../_lib/auth.js'
 
 export default handler(['POST'], async (req, res) => {
@@ -18,10 +18,11 @@ export default handler(['POST'], async (req, res) => {
   const ok = row ? await verifyPassword(password, row.password_hash) : false
   if (!row || !ok) throw new HttpError(401, 'Email or password is incorrect.')
 
-  await createSession(res, row.id)
+  const token = await createSession(res, row.id)
   void sweepSessions()
 
   json(res, 200, {
+    token: isNativeClient(req) ? token : undefined,
     user: {
       id: row.id,
       email: row.email,

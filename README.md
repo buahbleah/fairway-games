@@ -29,13 +29,34 @@ for a phone held in one hand.
 | `node scripts-screenshots.mjs` | Capture the key screens into `screenshots/` (dev server must be running) |
 | `node scripts-offline-check.mjs` | Prove the built app plays a hole with the network switched off (`npm run preview` must be running) |
 
+## Playing together
+
+Sign in with an email and the group can share a round: everyone scores from their
+own phone and the card fills in on every screen. Around that sit a friends list
+(add by email), leagues with a join code and their full round history, and round
+invitations.
+
+**Signing in is optional.** A solo round needs no account and no connection —
+that path is unchanged.
+
+Handicaps are per player: only you can edit yours, and Round Setup has a single
+"even it up with handicaps" control that shows what each player will play off
+before anyone tees off. Underneath, that is the same net-scoring engine the six
+games already used — shots are given on the hardest holes by stroke index.
+
 ## Offline
 
-The app is offline-first, not offline-capable-if-you-are-lucky. There is no
-network call anywhere in the codebase. Rounds, players, presets and preferences
-live in `localStorage`; the production build precaches every asset with a service
-worker. Once the app has been opened while online, it works with the phone in
-aeroplane mode for the rest of its life.
+The app is offline-first, not offline-capable-if-you-are-lucky. Rounds, players,
+presets and preferences live in `localStorage`; the production build precaches
+every asset with a service worker. Once the app has been opened while online, it
+works with the phone in aeroplane mode.
+
+Shared rounds keep that property. Writes go to a local mirror and a queue, and
+the queue flushes when the signal comes back. Hole scores are merged **key by
+key** in Postgres, so a queued write replayed twenty minutes later never wipes
+out what somebody else entered in the meantime — it only replaces its own
+players' numbers. That is the single behaviour live scoring rests on and it has
+a dedicated integration test.
 
 This is verified, not assumed. `scripts-offline-check.mjs` loads the production
 build, switches the network off, reloads, plays a hole of Skins and reloads again:
@@ -46,6 +67,19 @@ offline reload rendered the app: true
 offline hole scored: true
 offline round resumed after reload: true
 ```
+
+## Deploying
+
+The web app is static; `api/` is a set of Vercel Node functions backed by Neon
+Postgres.
+
+1. Import the repository at [vercel.com/new](https://vercel.com/new). Vercel
+   detects Vite; `vercel.json` pins the function region next to the database.
+2. Add one environment variable — `DATABASE_URL`, the Neon connection string —
+   for Production, Preview and Development.
+3. Deploy. Every push to `main` redeploys from then on.
+
+The schema lives in `db/schema.sql`. Run it once against a fresh database.
 
 ## Installing on a phone
 
@@ -74,6 +108,8 @@ already in the repo with the app id, name and `dist` web directory set.
 ## How the code is arranged
 
 ```
+api/             Vercel functions — accounts, friends, leagues, rounds, sync
+  _lib/          database, sessions, password hashing, request plumbing
 src/
   core/          domain types, handicap maths, course data, shared scoring helpers
   games/
@@ -86,7 +122,8 @@ src/
     registry.ts  the only file that knows all six games exist
     hudRegistry.ts
   design/        tokens, base styles, components, screens — no colour is hardcoded elsewhere
-  state/         store (persistence, undo) and a small hash router
+  net/           the only module that talks to the server
+  state/         local store, account, shared-round sync, and a small hash router
   ui/            shared components, icon system, course artwork
   screens/       home, game select, rules, setup, play, results, history, settings
 ```
@@ -122,10 +159,22 @@ should be and why.
 npm test
 ```
 
-127 tests covering all six scoring engines plus the handicap maths: every Wolf
-scenario, skins carries and validation, Nassau presses and re-presses, Vegas
-number construction and flips, every Dots rule variation, and match-play result
-notation including dormie and closeouts.
+138 tests covering all six scoring engines, the handicap maths and the offline
+write queue: every Wolf scenario, skins carries and validation, Nassau presses
+and re-presses, Vegas number construction and flips, every Dots rule variation,
+and match-play result notation including dormie and closeouts.
+
+A further 17 integration tests exercise the API against a real database, and run
+only when `DATABASE_URL` is set:
+
+```bash
+DATABASE_URL="postgres://..." npm test
+```
+
+They cover registration, sign-in (including that a wrong password and an unknown
+address give the same answer, so accounts cannot be enumerated), friend requests,
+league join codes, round access control, and the score merge two phones depend
+on.
 
 ---
 
@@ -135,3 +184,5 @@ notation including dormie and closeouts.
   design reviews and what each one changed.
 - **`GAME_RESEARCH.md`** — twenty golf formats surveyed and ranked, with the
   recommendation for games #7, #8 and #9.
+- **`db/schema.sql`** — the database schema, with the trigger that powers the
+  cheap version-poll.

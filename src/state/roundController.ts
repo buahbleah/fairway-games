@@ -23,6 +23,7 @@ export interface RoundController {
   canUndo: boolean
   undoLabel: string | null
   setScore: (hole: number, playerId: string, value: number | null) => void
+  adjustScore: (hole: number, playerId: string, delta: number, fallback: number) => void
   patchEntry: (hole: number, patch: Partial<HoleEntry>) => void
   completeHole: (hole: number) => void
   goToHole: (hole: number) => void
@@ -49,6 +50,14 @@ export function useRoundController(roundId: string | null): RoundController {
     (hole: number, playerId: string, value: number | null) => {
       if (online) remote.setScore(hole, playerId, value)
       else if (roundId) store.setScore(roundId, hole, playerId, value)
+    },
+    [online, remote, store, roundId],
+  )
+
+  const adjustScore = useCallback(
+    (hole: number, playerId: string, delta: number, fallback: number) => {
+      if (online) remote.adjustScore(hole, playerId, delta, fallback)
+      else if (roundId) store.adjustScore(roundId, hole, playerId, delta, fallback)
     },
     [online, remote, store, roundId],
   )
@@ -137,6 +146,7 @@ export function useRoundController(roundId: string | null): RoundController {
       canUndo: online ? remote.canUndo : roundId ? store.canUndo(roundId) : false,
       undoLabel: online ? null : roundId ? store.undoLabel(roundId) : null,
       setScore,
+      adjustScore,
       patchEntry,
       completeHole,
       goToHole,
@@ -158,6 +168,7 @@ export function useRoundController(roundId: string | null): RoundController {
       roundId,
       store,
       setScore,
+      adjustScore,
       patchEntry,
       completeHole,
       goToHole,

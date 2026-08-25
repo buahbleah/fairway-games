@@ -240,6 +240,9 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
             ctx={ctx}
             entry={entry}
             onScore={(playerId, value) => ctrl.setScore(round.currentHole, playerId, value)}
+            onAdjust={(playerId, delta) =>
+              ctrl.adjustScore(round.currentHole, playerId, delta, hole.par)
+            }
           />
         )}
 
@@ -481,11 +484,13 @@ function ScoreStage({
   ctx,
   entry,
   onScore,
+  onAdjust,
 }: {
   round: Round
   ctx: GameContext
   entry: HoleEntry | undefined
   onScore: (playerId: PlayerId, value: number | null) => void
+  onAdjust: (playerId: PlayerId, delta: number) => void
 }) {
   const hole = holeByNumber(round.course, round.currentHole)
   const net = netContextFrom(ctx)
@@ -523,7 +528,7 @@ function ScoreStage({
               <button
                 className="stepper__btn"
                 aria-label={`One less for ${target.label}`}
-                onClick={() => set(target.id, Math.max(1, (value ?? hole.par) - 1))}
+                onClick={() => onAdjust(target.id, -1)}
               >
                 −
               </button>
@@ -537,7 +542,7 @@ function ScoreStage({
               <button
                 className="stepper__btn"
                 aria-label={`One more for ${target.label}`}
-                onClick={() => set(target.id, Math.min(20, (value ?? hole.par) + 1))}
+                onClick={() => onAdjust(target.id, +1)}
               >
                 +
               </button>

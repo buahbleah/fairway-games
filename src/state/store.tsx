@@ -111,6 +111,8 @@ interface StoreValue {
   /** Merges into whatever the entry holds right now — safe against fast taps. */
   patchEntry: (roundId: string, hole: number, patch: Partial<HoleEntry>, undoLabel?: string) => void
   setScore: (roundId: string, hole: number, playerId: string, value: number | null) => void
+  /** Nudge a score, computed inside the updater so fast taps all count. */
+  adjustScore: (roundId: string, hole: number, playerId: string, delta: number, fallback: number) => void
   patchGameState: (roundId: string, patch: Record<string, any>, undoLabel?: string) => void
   completeHole: (roundId: string, entry: HoleEntry) => void
   goToHole: (roundId: string, hole: number) => void
@@ -284,6 +286,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 complete: false,
               }
             const merged: HoleEntry = { ...base, scores: { ...base.scores, [playerId]: value } }
+            const entries = [...r.entries.filter((e) => e.hole !== hole), merged].sort((a, b) => a.hole - b.hole)
+            return { ...r, entries, updatedAt: Date.now() }
+          }),
+        }))
+      },
+
+      adjustScore: (roundId, hole, playerId, delta, fallback) => {
+        mutate((s) => ({
+          ...s,
+          rounds: s.rounds.map((r) => {
+            if (r.id !== roundId) return r
+            const existing = r.entries.find((e) => e.hole === hole)
+            const base: HoleEntry =
+              existing ?? {
+                hole,
+                scores: Object.fromEntries(r.players.map((p) => [p.id, null])),
+                complete: false,
+              }
+            const current = base.scores[playerId]
+            const next = Math.max(1, Math.min(20, (current ?? fallback) + delta))
+            const merged: HoleEntry = { ...base, scores: { ...base.scores, [playerId]: next } }
             const entries = [...r.entries.filter((e) => e.hole !== hole), merged].sort((a, b) => a.hole - b.hole)
             return { ...r, entries, updatedAt: Date.now() }
           }),

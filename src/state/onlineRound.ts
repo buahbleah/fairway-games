@@ -22,6 +22,13 @@ export type Op =
 const QUEUE_KEY = (id: string) => `fairway.queue.${id}`
 const MIRROR_KEY = (id: string) => `fairway.mirror.${id}`
 const POLL_MS = 4000
+/**
+ * How long to wait after the last tap before sending.
+ *
+ * Tapping + four times should feel like four taps and cost one request. The
+ * screen updates on every tap regardless — this only delays the network.
+ */
+const WRITE_DEBOUNCE_MS = 600
 
 /* ---------------------------------------------------------------- mapping */
 
@@ -114,6 +121,32 @@ export function enqueue(queue: Op[], op: Op): Op[] {
   return [...queue, op]
 }
 
+/**
+ * Applies still-unsent local edits on top of a server document.
+ *
+ * Without this, the reply to an earlier write would overwrite a number the
+ * golfer has since tapped up again, and the score would visibly jump back.
+ */
+export function layerPending(doc: RoundDoc, queue: Op[]): RoundDoc {
+  const holeOps = queue.filter((o): o is Extract<Op, { kind: 'hole' }> => o.kind === 'hole')
+  if (!holeOps.length) return doc
+
+  const entries = [...doc.entries]
+  for (const op of holeOps) {
+    const idx = entries.findIndex((e) => e.hole === op.hole)
+    const base = idx >= 0 ? entries[idx] : { hole: op.hole, scores: {}, game: {}, complete: false }
+    const merged = {
+      ...base,
+      scores: { ...base.scores, ...(op.scores ?? {}) },
+      game: { ...base.game, ...(op.game ?? {}) },
+      complete: op.complete ?? base.complete,
+    }
+    if (idx >= 0) entries[idx] = merged
+    else entries.push(merged)
+  }
+  return { ...doc, entries: entries.sort((a, b) => a.hole - b.hole) }
+}
+
 /* -------------------------------------------------------------------- hook */
 
 export interface OnlineRound {
@@ -123,6 +156,8 @@ export interface OnlineRound {
   sync: SyncState
   pending: number
   setScore: (hole: number, playerId: string, value: number | null) => void
+  /** Nudge a score up or down. Reads the current value, so fast taps all count. */
+  adjustScore: (hole: number, playerId: string, delta: number, fallback: number) => void
   patchEntry: (hole: number, patch: Partial<HoleEntry>) => void
   completeHole: (hole: number) => void
   goToHole: (hole: number) => void
@@ -149,6 +184,7 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
   docRef.current = doc
   const flushing = useRef(false)
   const announced = useRef<string | null>(null)
+  const flushTimer = useRef<number>()
 
   const persistQueue = useCallback(
     (next: Op[]) => {
@@ -176,22 +212,35 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
     try {
       while (queueRef.current.length) {
         const op = queueRef.current[0]
-        const result =
-          op.kind === 'hole'
-            ? await api.putHole(roundId, {
-                hole: op.hole,
-                scores: op.scores,
-                game: op.game,
-                complete: op.complete,
-              })
-            : await api.patchRound(roundId, {
-                currentHole: op.currentHole,
-                status: op.status,
-                settings: op.settings,
-                gameState: op.gameState,
-              })
-        persistDoc(result.round)
-        persistQueue(queueRef.current.slice(1))
+        // Off the queue before sending, so a tap arriving mid-flight starts a
+        // fresh op instead of mutating one that is already on its way out and
+        // about to be discarded.
+        const rest = queueRef.current.slice(1)
+        persistQueue(rest)
+
+        let result
+        try {
+          result =
+            op.kind === 'hole'
+              ? await api.putHole(roundId, {
+                  hole: op.hole,
+                  scores: op.scores,
+                  game: op.game,
+                  complete: op.complete,
+                })
+              : await api.patchRound(roundId, {
+                  currentHole: op.currentHole,
+                  status: op.status,
+                  settings: op.settings,
+                  gameState: op.gameState,
+                })
+        } catch (err) {
+          // Put it back at the front so ordering survives a dropped signal.
+          persistQueue([op, ...queueRef.current])
+          throw err
+        }
+
+        persistDoc(layerPending(result.round, queueRef.current))
       }
       setSync('idle')
       setError(null)
@@ -218,7 +267,7 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
     try {
       const version = docRef.current?.version
       const result = await api.round(roundId, queueRef.current.length ? undefined : version)
-      if (result.changed && result.round) persistDoc(result.round)
+      if (result.changed && result.round) persistDoc(layerPending(result.round, queueRef.current))
       setError(null)
       setSync((s) => (s === 'offline' ? 'idle' : s))
     } catch (err) {
@@ -275,10 +324,14 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
   )
 
   const push = useCallback(
-    (op: Op) => {
-      const next = enqueue(queueRef.current, op)
-      persistQueue(next)
-      void flush()
+    (op: Op, immediate = false) => {
+      persistQueue(enqueue(queueRef.current, op))
+      window.clearTimeout(flushTimer.current)
+      if (immediate) {
+        void flush()
+        return
+      }
+      flushTimer.current = window.setTimeout(() => void flush(), WRITE_DEBOUNCE_MS)
     },
     [persistQueue, flush],
   )
@@ -303,6 +356,25 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
         return { ...d, entries: [...d.entries.filter((e) => e.hole !== hole), entry].sort((a, b) => a.hole - b.hole) }
       })
       push({ kind: 'hole', hole, scores: { [playerId]: value } })
+    },
+    [applyLocal, push],
+  )
+
+  const adjustScore = useCallback(
+    (hole: number, playerId: string, delta: number, fallback: number) => {
+      // Read from the ref, never from render state: two taps in one frame both
+      // have to count, and rendered state is a frame behind.
+      const current = docRef.current
+      const existing = current ? entryFor(current, hole).scores[playerId] : null
+      const next = Math.max(1, Math.min(20, (existing ?? fallback) + delta))
+      if (next === existing) return
+
+      applyLocal((d) => {
+        const before = entryFor(d, hole)
+        const entry = { ...before, scores: { ...before.scores, [playerId]: next } }
+        return { ...d, entries: [...d.entries.filter((e) => e.hole !== hole), entry].sort((a, b) => a.hole - b.hole) }
+      })
+      push({ kind: 'hole', hole, scores: { [playerId]: next } })
     },
     [applyLocal, push],
   )
@@ -336,7 +408,7 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
           ),
         }
       })
-      push({ kind: 'hole', hole, complete: true })
+      push({ kind: 'hole', hole, complete: true }, true)
     },
     [applyLocal, push, rememberUndo],
   )
@@ -381,6 +453,8 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
     return last.label
   }, [undoStack, applyLocal, push])
 
+  useEffect(() => () => window.clearTimeout(flushTimer.current), [])
+
   const round = useMemo(() => (doc ? docToRound(doc) : null), [doc])
 
   return {
@@ -390,6 +464,7 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
     sync,
     pending: queue.length,
     setScore,
+    adjustScore,
     patchEntry,
     completeHole,
     goToHole,

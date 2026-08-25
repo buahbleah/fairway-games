@@ -30,7 +30,15 @@ export function FriendsScreen() {
   }, [])
 
   useEffect(() => {
-    if (account) void load()
+    if (!account) return
+    void load()
+    const onVisible = () => document.visibilityState === 'visible' && void load()
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
   }, [account, load])
 
   if (!account) {

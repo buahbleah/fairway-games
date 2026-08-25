@@ -113,11 +113,39 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
   }, [apply, refreshInvites])
 
-  // Poll for invitations while signed in, gently.
+  /**
+   * Keep the invitations current.
+   *
+   * A timer alone is not enough: Android suspends timers the moment the app
+   * goes to the background, so someone who switches away and comes back later
+   * would keep seeing whatever was true when they left — a friend request or a
+   * started round could sit unseen until the app was force-restarted. So the
+   * app also refreshes whenever it comes back to the foreground, and whenever
+   * the connection returns.
+   */
   useEffect(() => {
     if (!account) return
-    const timer = window.setInterval(() => void refreshInvites(), 60_000)
-    return () => window.clearInterval(timer)
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshInvites()
+    }, 60_000)
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refreshInvites()
+    }
+    const onFocus = () => void refreshInvites()
+    const onOnline = () => void refreshInvites()
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('online', onOnline)
+    }
   }, [account, refreshInvites])
 
   const value = useMemo<AccountValue>(

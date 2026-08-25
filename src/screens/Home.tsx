@@ -31,11 +31,30 @@ export function HomeScreen() {
       setLiveRounds([])
       return
     }
-    api
-      .rounds()
-      .then((d) => setLiveRounds(d.rounds.filter((r) => r.status === 'active')))
-      .catch(() => setLiveRounds([]))
-  }, [account])
+    const load = () =>
+      api
+        .rounds()
+        .then((d) => setLiveRounds(d.rounds.filter((r) => r.status === 'active')))
+        .catch(() => {
+          /* offline — keep showing what we had */
+        })
+
+    void load()
+    void refreshInvites()
+
+    // Coming back to the app has to show what happened while it was away.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      void load()
+      void refreshInvites()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
+    }
+  }, [account, refreshInvites])
 
   const finished = rounds.filter((r) => r.status === 'finished')
   const resumeGame = activeRound ? GAMES.find((g) => g.meta.id === activeRound.gameId) : null

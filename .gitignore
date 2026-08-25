@@ -20,6 +20,9 @@ ios
 
 # Signing material must never be committed.
 android/app/*.jks
+# The base64 form is the key in text; *.jks does not match it.
+*.jks.base64
+*.keystore.base64
 android/app/*.keystore
 *.jks
 

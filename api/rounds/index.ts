@@ -108,5 +108,18 @@ export default handler(['GET', 'POST'], async (req, res) => {
     `
   }
 
+  // Everyone seated who has an account gets a "round has started" notice. The
+  // host does not need telling — they just started it.
+  for (const p of players) {
+    if (!p.userId || p.userId === user.id) continue
+    const rows = (await sql`SELECT email FROM users WHERE id = ${p.userId}::uuid`) as any[]
+    if (!rows[0]) continue
+    await sql`
+      INSERT INTO round_invites (round_id, email, invited_by, status)
+      VALUES (${roundId}, ${String(rows[0].email).toLowerCase()}, ${user.id}, 'pending')
+      ON CONFLICT (round_id, lower(email)) DO NOTHING
+    `
+  }
+
   json(res, 201, { round: await loadRound(roundId) })
 })

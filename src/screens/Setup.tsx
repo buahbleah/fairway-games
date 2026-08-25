@@ -4,7 +4,7 @@ import { useRouter } from '../state/router'
 import { uid, useStore } from '../state/store'
 import { useAccount } from '../state/account'
 import { api, type Friend, type League } from '../net/api'
-import { AppBar, Avatar, Segmented, Sheet, Stepper, Switch, useToast } from '../ui/components'
+import { AppBar, Avatar, Sheet, Stepper, Switch, useToast } from '../ui/components'
 import { StepDots } from '../ui/art'
 import { GAME_MARKS, Check, Handicap as HandicapIcon, Plus, Trash } from '../ui/icons'
 import { SettingsForm } from './SettingsForm'
@@ -44,6 +44,7 @@ export function SetupScreen() {
   const [error, setError] = useState<string | null>(null)
 
   const [friends, setFriends] = useState<Friend[]>([])
+  const [leagueMembers, setLeagueMembers] = useState<Friend[]>([])
   const [leagues, setLeagues] = useState<League[]>([])
   const [leagueId, setLeagueId] = useState<string | null>(initialLeague)
   const [playOnline, setPlayOnline] = useState(!!account)
@@ -81,6 +82,25 @@ export function SetupScreen() {
       .then((d) => setLeagues(d.leagues))
       .catch(() => setLeagues([]))
   }, [account, store.roster])
+
+  /* Whoever is in the chosen league can be picked, friend or not. */
+  useEffect(() => {
+    if (!account || !leagueId) {
+      setLeagueMembers([])
+      return
+    }
+    let cancelled = false
+    api
+      .league(leagueId)
+      .then((d) => {
+        if (cancelled) return
+        setLeagueMembers(d.members.filter((m) => m.id !== account.id))
+      })
+      .catch(() => !cancelled && setLeagueMembers([]))
+    return () => {
+      cancelled = true
+    }
+  }, [account, leagueId])
 
   const chooseGame = (id: GameId) => {
     setGameId(id)
@@ -164,14 +184,22 @@ export function SetupScreen() {
     step === 1 ? go(leagueId ? '/games?league=' + leagueId : '/games') : setStep((s) => s - 1)
 
   /* Everyone who could be added, without duplicates. */
-  const friendPicks: Pick[] = friends.map((f) => ({
+  const toPick = (f: Friend): Pick => ({
     id: `u_${f.id.slice(0, 8)}`,
     userId: f.id,
     name: f.name,
     handicapIndex: f.handicapIndex,
     colorIndex: f.colorIndex,
-  }))
+    avatarUrl: f.avatarUrl ?? null,
+  })
+
+  const leaguePicks: Pick[] = leagueMembers.map(toPick)
+  // A league mate who is also a friend should only be offered once.
+  const friendPicks: Pick[] = friends
+    .map(toPick)
+    .filter((f) => !leaguePicks.some((l) => l.id === f.id))
   const localPicks: Pick[] = store.roster.map((p) => ({ ...p }))
+  const full = players.length >= game.meta.maxPlayers
 
   return (
     <div className="page">
@@ -219,9 +247,59 @@ export function SetupScreen() {
             <div>
               <h2 className="stage__prompt">Who is playing?</h2>
               <p className="stage__hint">
-                {game.meta.name} · {game.meta.playersLabel}
+                {game.meta.name} · {game.meta.playersLabel} · {players.length} selected
               </p>
             </div>
+
+            {account && leagues.length > 0 && (
+              <div className="stack stack-2">
+                <h3 className="section-title">League</h3>
+                <p className="t-sm muted">
+                  Pick a league and its members appear below. The round is added to that league's
+                  history.
+                </p>
+                <div className="row-wrap">
+                  <button
+                    className={`selectchip${leagueId === null ? ' is-selected' : ''}`}
+                    onClick={() => setLeagueId(null)}
+                  >
+                    No league
+                  </button>
+                  {leagues.map((l) => (
+                    <button
+                      key={l.id}
+                      className={`selectchip${leagueId === l.id ? ' is-selected' : ''}`}
+                      onClick={() => setLeagueId(l.id)}
+                    >
+                      {l.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {leaguePicks.length > 0 && (
+              <div className="stack stack-2">
+                <h3 className="section-title">In this league</h3>
+                {leaguePicks.map((f) => (
+                  <PlayerRow
+                    key={f.id}
+                    pick={f}
+                    course={course}
+                    selected={players.some((x) => x.id === f.id)}
+                    disabled={full && !players.some((x) => x.id === f.id)}
+                    onToggle={() => toggle(f)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {leagueId && leaguePicks.length === 0 && (
+              <p className="t-sm muted">
+                You are the only member of that league so far. Share its join code, or add guests
+                below.
+              </p>
+            )}
 
             {friendPicks.length > 0 && (
               <div className="stack stack-2">
@@ -232,6 +310,7 @@ export function SetupScreen() {
                     pick={f}
                     course={course}
                     selected={players.some((x) => x.id === f.id)}
+                    disabled={full && !players.some((x) => x.id === f.id)}
                     onToggle={() => toggle(f)}
                   />
                 ))}
@@ -239,20 +318,14 @@ export function SetupScreen() {
             )}
 
             <div className="stack stack-2">
-              {friendPicks.length > 0 && localPicks.length > 0 && (
-                <h3 className="section-title">On this phone</h3>
-              )}
-              {players
-                .filter((p) => !friendPicks.some((f) => f.id === p.id) && !localPicks.some((l) => l.id === p.id))
-                .map((p) => (
-                  <PlayerRow key={p.id} pick={p} course={course} selected onToggle={() => toggle(p)} />
-                ))}
+              {localPicks.length > 0 && <h3 className="section-title">Guests</h3>}
               {localPicks.map((p) => (
                 <div key={p.id} className="row" style={{ gap: 'var(--s-2)' }}>
                   <PlayerRow
                     pick={p}
                     course={course}
                     selected={players.some((x) => x.id === p.id)}
+                    disabled={full && !players.some((x) => x.id === p.id)}
                     onToggle={() => toggle(p)}
                   />
                   <button
@@ -269,19 +342,18 @@ export function SetupScreen() {
               ))}
             </div>
 
-            <button className="btn btn--secondary btn--block" onClick={() => setAddOpen(true)}>
+            <button className="btn btn--secondary btn--block" disabled={full} onClick={() => setAddOpen(true)}>
               <Plus size={18} /> Add a guest
             </button>
 
-            {account && (
+            {account ? (
               <p className="t-sm muted">
-                Guests do not need an account — you keep their score. Anyone with an account can
-                score from their own phone.
+                Anyone with an account scores from their own phone and is told the round has
+                started. You keep score for guests.
               </p>
-            )}
-            {!account && (
+            ) : (
               <button className="btn btn--quiet btn--block" onClick={() => go('/account')}>
-                Sign in to play with friends across phones
+                Sign in to play with your league across phones
               </button>
             )}
 
@@ -427,18 +499,12 @@ export function SetupScreen() {
                   <Switch checked={playOnline} label="Score together" onChange={setPlayOnline} />
                 </div>
 
-                {playOnline && leagues.length > 0 && (
-                  <div className="stack stack-2" style={{ marginTop: 'var(--s-4)' }}>
-                    <div className="label">Count it towards a league</div>
-                    <Segmented
-                      ariaLabel="League"
-                      value={leagueId ?? 'none'}
-                      onChange={(v) => setLeagueId(v === 'none' ? null : v)}
-                      options={[
-                        { value: 'none', label: 'No league' },
-                        ...leagues.slice(0, 2).map((l) => ({ value: l.id, label: l.name })),
-                      ]}
-                    />
+                {playOnline && leagueId && (
+                  <div className="row-between" style={{ marginTop: 'var(--s-4)' }}>
+                    <span className="label">League</span>
+                    <span style={{ fontWeight: 700 }}>
+                      {leagues.find((l) => l.id === leagueId)?.name ?? 'Selected'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -560,11 +626,13 @@ function PlayerRow({
   pick,
   course,
   selected,
+  disabled,
   onToggle,
 }: {
   pick: Pick
   course: ReturnType<typeof defaultCourse>
   selected: boolean
+  disabled?: boolean
   onToggle: () => void
 }) {
   return (
@@ -572,6 +640,8 @@ function PlayerRow({
       className={`playerpick grow${selected ? ' is-selected' : ''}`}
       onClick={onToggle}
       aria-pressed={selected}
+      disabled={disabled}
+      style={disabled ? { opacity: 0.45 } : undefined}
     >
       <span className="playerpick__check" aria-hidden>
         <Check size={16} />

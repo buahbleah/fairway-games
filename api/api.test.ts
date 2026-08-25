@@ -9,10 +9,13 @@ import friends from './friends/index.js'
 import respondFriend from './friends/respond.js'
 import leagues from './leagues/index.js'
 import joinLeague from './leagues/join.js'
+import leagueDetail from './leagues/[id].js'
 import roundsIndex from './rounds/index.js'
 import roundGet from './rounds/[id]/index.js'
 import roundHole from './rounds/[id]/hole.js'
 import roundInvite from './rounds/[id]/invite.js'
+import roundJoin from './rounds/[id]/join.js'
+import invitesFeed from './invites.js'
 
 /**
  * Integration tests against the real database.
@@ -468,6 +471,109 @@ suite('The API', () => {
     await call(logout, { method: 'POST', bearer: native.body.token })
     const after = await call(me, { method: 'GET', bearer: native.body.token })
     expect(after.body.user).toBeNull()
+  })
+
+  /* ------------------------------------------- starting a round in a league */
+
+  it('lets the host seat league mates who are not friends, plus a guest', async () => {
+    // A third player who is in the league but is nobody's friend.
+    const mikeEmail = `test-mike-${stamp}@fairway.test`
+    const mikeReg = await call(register, {
+      method: 'POST',
+      body: { email: mikeEmail, name: 'Mike', password: 'longenough1', handicapIndex: 6.1 },
+    })
+    const mike = sessionFrom(mikeReg)
+    const mikeId = mikeReg.body.user.id
+
+    const league = await call(leagues, {
+      method: 'POST',
+      body: { name: `League Round ${stamp}` },
+      session: marc,
+    })
+    const leagueId = league.body.league.id
+    const code = league.body.league.joinCode
+    await call(joinLeague, { method: 'POST', body: { code }, session: mike })
+
+    // Marc starts a round with a league mate and a guest side by side.
+    const created = await call(roundsIndex, {
+      method: 'POST',
+      session: marc,
+      body: {
+        gameId: 'wolf',
+        leagueId,
+        players: [
+          { id: 'a', userId: marcId, name: 'Marc', colorIndex: 0 },
+          { id: 'b', userId: mikeId, name: 'Mike', colorIndex: 1 },
+          { id: 'c', userId: null, name: 'Guest Gary', colorIndex: 2 },
+        ],
+        settings: {},
+        course: {},
+        gameState: {},
+        currentHole: 1,
+      },
+    })
+    expect(created.status).toBe(201)
+    const roundId = created.body.round.id
+    expect(created.body.round.players).toHaveLength(3)
+
+    // The guest has no account and needs none.
+    const guest = created.body.round.players.find((p: any) => p.name === 'Guest Gary')
+    expect(guest.userId).toBeNull()
+
+    // Mike is told a round has started, without anyone inviting him by hand.
+    const mikesFeed = await call(invitesFeed, { method: 'GET', session: mike })
+    expect(mikesFeed.body.rounds.some((r: any) => r.roundId === roundId)).toBe(true)
+
+    // The host is not told about their own round.
+    const marcsFeed = await call(invitesFeed, { method: 'GET', session: marc })
+    expect(marcsFeed.body.rounds.some((r: any) => r.roundId === roundId)).toBe(false)
+
+    // Mike opens it, which clears the notice.
+    const opened = await call(roundJoin, { method: 'POST', query: { id: roundId }, session: mike })
+    expect(opened.status).toBe(200)
+    const afterOpen = await call(invitesFeed, { method: 'GET', session: mike })
+    expect(afterOpen.body.rounds.some((r: any) => r.roundId === roundId)).toBe(false)
+
+    // And he can score, including for the guest.
+    const scored = await call(roundHole, {
+      method: 'PUT',
+      query: { id: roundId },
+      body: { hole: 1, scores: { b: 4, c: 5 } },
+      session: mike,
+    })
+    const entry = scored.body.round.entries.find((e: any) => e.hole === 1)
+    expect(entry.scores).toEqual({ b: 4, c: 5 })
+
+    // The round shows up in the league's history for both of them.
+    const detail = await call(leagueDetail, { method: 'GET', query: { id: leagueId }, session: mike })
+    expect(detail.body.rounds.some((r: any) => r.id === roundId)).toBe(true)
+
+    await sql`DELETE FROM users WHERE lower(email) = ${mikeEmail}`
+  })
+
+  it('opening a round twice is harmless', async () => {
+    const created = await call(roundsIndex, {
+      method: 'POST',
+      session: marc,
+      body: {
+        gameId: 'skins',
+        players: [
+          { id: 'a', userId: marcId, name: 'Marc', colorIndex: 0 },
+          { id: 'b', name: 'Guest', colorIndex: 1 },
+        ],
+        settings: {},
+        course: {},
+        gameState: {},
+        currentHole: 1,
+      },
+    })
+    const roundId = created.body.round.id
+    // The host opens their own round — join is called on every open.
+    const first = await call(roundJoin, { method: 'POST', query: { id: roundId }, session: marc })
+    const second = await call(roundJoin, { method: 'POST', query: { id: roundId }, session: marc })
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+    expect(second.body.round.players).toHaveLength(2)
   })
 
   /* ----------------------------------------------------------------- CORS */

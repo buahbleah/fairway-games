@@ -19,13 +19,18 @@ export default handler(['POST'], async (req, res) => {
       EXISTS (SELECT 1 FROM league_members m
               WHERE m.league_id = r.league_id AND m.user_id = ${user.id}) AS in_league,
       EXISTS (SELECT 1 FROM round_players p
-              WHERE p.round_id = r.id AND p.user_id = ${user.id}) AS seated
+              WHERE p.round_id = r.id AND p.user_id = ${user.id}) AS seated,
+      (r.host_id = ${user.id}) AS is_host
     FROM rounds r WHERE r.id = ${id}::uuid
   `) as any[]
 
   const round = rows[0]
   if (!round) throw new HttpError(404, 'That round does not exist.')
-  if (!round.invited && !round.in_league) throw new HttpError(403, 'You have not been invited to that round.')
+  // Already seated, already hosting, invited, or in the league — any of those
+  // is reason enough to be here. Calling this twice is harmless.
+  if (!round.invited && !round.in_league && !round.seated && !round.is_host) {
+    throw new HttpError(403, 'You have not been invited to that round.')
+  }
 
   if (!round.seated) {
     const openSeat = (await sql`

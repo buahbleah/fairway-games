@@ -148,6 +148,7 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
   const docRef = useRef(doc)
   docRef.current = doc
   const flushing = useRef(false)
+  const announced = useRef<string | null>(null)
 
   const persistQueue = useCallback(
     (next: Op[]) => {
@@ -233,6 +234,13 @@ export function useOnlineRound(roundId: string | null): OnlineRound {
     if (!roundId) return
     setLoading(!readJson<RoundDoc | null>(MIRROR_KEY(roundId), null))
     void refresh()
+
+    // Opening a round you were put into counts as joining it, which clears the
+    // "a round has started" notice. Idempotent, and a failure changes nothing.
+    if (announced.current !== roundId) {
+      announced.current = roundId
+      void api.joinRound(roundId).catch(() => {})
+    }
   }, [roundId, refresh])
 
   // Poll while the round is open and the screen is actually being looked at.

@@ -1,43 +1,122 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Fairway Games">
   <!--
-    APP ICON
-    A ball resting by a flagstick. Two shapes only — a light disc and a gold
-    triangle — so the mark survives at 48px, where the six dimples (one per game
-    mode) read as texture rather than detail.
+    APP ICON — crest version.
+    A gold-ringed crest over a green field: compass star, pines, a flag on the
+    green, the fairway curling past a bunker. Below it the monogram and the
+    wordmark. Drawn as vector so it stays crisp at 1024 and prints clean.
+    The wordmark is unreadable below ~128px by nature; icon-maskable.svg carries
+    the crest alone for launcher sizes.
   -->
   <defs>
-    <linearGradient id="ground" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0%" stop-color="#17402f"/>
-      <stop offset="55%" stop-color="#0e2b21"/>
-      <stop offset="100%" stop-color="#071410"/>
+    <linearGradient id="field" x1=".18" y1="0" x2=".82" y2="1">
+      <stop offset="0%" stop-color="#2f8f52"/>
+      <stop offset="45%" stop-color="#1a6b3c"/>
+      <stop offset="100%" stop-color="#0a3320"/>
     </linearGradient>
-    <linearGradient id="ballFace" x1="0.25" y1="0.05" x2="0.75" y2="1">
+    <radialGradient id="fieldGlow" cx=".5" cy=".33" r=".72">
+      <stop offset="0%" stop-color="#4fbd74" stop-opacity=".55"/>
+      <stop offset="60%" stop-color="#4fbd74" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="vignette" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity=".28"/>
+    </linearGradient>
+
+    <linearGradient id="gold" x1=".15" y1="0" x2=".85" y2="1">
+      <stop offset="0%" stop-color="#f6e2a4"/>
+      <stop offset="35%" stop-color="#d9b45f"/>
+      <stop offset="70%" stop-color="#b98d3c"/>
+      <stop offset="100%" stop-color="#f0d68f"/>
+    </linearGradient>
+
+    <linearGradient id="sky" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0%" stop-color="#bfe3ea"/>
+      <stop offset="55%" stop-color="#e4f2e2"/>
+      <stop offset="100%" stop-color="#f6f6e6"/>
+    </linearGradient>
+    <linearGradient id="turf" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0%" stop-color="#3f9a55"/>
+      <stop offset="100%" stop-color="#186434"/>
+    </linearGradient>
+    <linearGradient id="fairway" x1=".5" y1="0" x2=".5" y2="1">
+      <stop offset="0%" stop-color="#8ed36f"/>
+      <stop offset="100%" stop-color="#5cb65c"/>
+    </linearGradient>
+    <linearGradient id="star" x1=".3" y1="0" x2=".7" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#ddd5c4"/>
+      <stop offset="100%" stop-color="#9dc9e0"/>
     </linearGradient>
-    <clipPath id="ballClip"><circle cx="206" cy="308" r="128"/></clipPath>
+
+    <clipPath id="crest"><circle cx="256" cy="190" r="116"/></clipPath>
   </defs>
 
-  <rect width="512" height="512" rx="112" fill="url(#ground)"/>
+  <!-- ============================================================ field -->
+  <rect width="512" height="512" rx="114" fill="url(#field)"/>
+  <rect width="512" height="512" rx="114" fill="url(#fieldGlow)"/>
+  <rect width="512" height="512" rx="114" fill="url(#vignette)"/>
+  <rect x="3" y="3" width="506" height="506" rx="111" fill="none"
+        stroke="#ffffff" stroke-opacity=".16" stroke-width="3"/>
 
-  <!-- fairway contours: the app's background language, kept very quiet -->
-  <g fill="none" stroke="#c79a4b" stroke-opacity=".22" stroke-width="7">
-    <path d="M-20 452c80-54 168-58 244-24s150 18 308-46"/>
-    <path d="M-20 500c84-58 176-62 252-26s154 14 300-52"/>
+  <!-- ============================================================ crest -->
+  <circle cx="256" cy="190" r="134" fill="#0a3320" fill-opacity=".45"/>
+  <circle cx="256" cy="190" r="130" fill="url(#gold)"/>
+  <circle cx="256" cy="190" r="119" fill="#0a3320"/>
+
+  <g clip-path="url(#crest)">
+    <rect x="140" y="74" width="232" height="232" fill="url(#sky)"/>
+
+    <g stroke="#ffffff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round">
+      <path d="M256 126 214 96M256 126 298 96M256 126 190 132M256 126 322 132"/>
+    </g>
+
+    <path d="M256 84 268 122 306 134 268 146 256 184 244 146 206 134 244 122Z" fill="#2a6f8e"/>
+    <path d="M256 96 265 126 295 134 265 142 256 172 247 142 217 134 247 126Z" fill="url(#star)"/>
+    <path d="M256 108 261 129 282 134 261 139 256 160 251 139 230 134 251 129Z" fill="#ffffff"/>
+
+    <path d="M140 214c26-6 44-22 62-22s30 14 54 12 40-18 62-16 34 18 54 18v24H140Z"
+          fill="#2c7a49" fill-opacity=".55"/>
+
+    <path d="M140 206h232v100H140Z" fill="url(#turf)"/>
+
+    <path d="M140 306C146 272 186 250 236 240C272 233 292 224 300 208L324 214C316 244 288 258 248 268C214 276 200 290 198 306Z"
+          fill="url(#fairway)"/>
+
+    <path d="M300 250c18-6 34-2 40 8s-4 22-22 24-32-4-34-14 2-14 16-18Z" fill="#f0dcae"
+          stroke="#c9ad78" stroke-width="2"/>
+
+    <ellipse cx="238" cy="222" rx="34" ry="14" fill="#7ecb6a"/>
+    <path d="M244 222v-44" stroke="#f7f5ec" stroke-width="4" stroke-linecap="round"/>
+    <path d="M244 180 274 189 244 199Z" fill="#d94f3d"/>
+    <circle cx="226" cy="224" r="4" fill="#ffffff"/>
+
+    <g fill="#14522e">
+      <path d="M330 210 314 210 330 178 346 210Z"/>
+      <path d="M330 190 318 190 330 164 342 190Z"/>
+      <path d="M330 174 320 174 330 152 340 174Z"/>
+      <rect x="327" y="206" width="6" height="10"/>
+      <path d="M356 212 342 212 356 184 370 212Z"/>
+      <path d="M356 194 346 194 356 170 366 194Z"/>
+      <rect x="353" y="208" width="6" height="10"/>
+      <path d="M170 214 156 214 170 186 184 214Z"/>
+      <path d="M170 196 160 196 170 172 180 196Z"/>
+      <rect x="167" y="210" width="6" height="10"/>
+      <path d="M194 216 183 216 194 194 205 216Z"/>
+      <rect x="191" y="212" width="6" height="9"/>
+    </g>
   </g>
 
-  <!-- flagstick, offset right so the ball never covers it -->
-  <path d="M356 424V72" stroke="#f4f1e8" stroke-width="16" stroke-linecap="round"/>
-  <path d="M356 80l128 40-128 44z" fill="#c79a4b"/>
+  <circle cx="256" cy="190" r="114" fill="none" stroke="#f6e2a4" stroke-opacity=".45" stroke-width="2"/>
 
-  <!-- ball -->
-  <circle cx="206" cy="308" r="128" fill="url(#ballFace)"/>
-  <g clip-path="url(#ballClip)" fill="#0e2b21" fill-opacity=".24">
-    <circle cx="150" cy="262" r="21"/>
-    <circle cx="206" cy="240" r="21"/>
-    <circle cx="262" cy="262" r="21"/>
-    <circle cx="150" cy="354" r="21"/>
-    <circle cx="206" cy="376" r="21"/>
-    <circle cx="262" cy="354" r="21"/>
+  <!-- ========================================================= monogram -->
+  <circle cx="256" cy="328" r="36" fill="#0a3320"/>
+  <circle cx="256" cy="328" r="31" fill="url(#gold)"/>
+  <path d="M246 311H269V319H255V325H266V333H255V346H246Z" fill="#0d3d25"/>
+
+  <!-- ========================================================= wordmark -->
+  <g font-family="'Segoe UI Black','Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif"
+     font-weight="900" text-anchor="middle">
+    <text x="256" y="427" font-size="60" letter-spacing="1.5" fill="#0a3320" fill-opacity=".35">FAIRWAY</text>
+    <text x="256" y="424" font-size="60" letter-spacing="1.5" fill="#ffffff">FAIRWAY</text>
+    <text x="256" y="462" font-size="25" letter-spacing="9" fill="#dcb765">GAMES</text>
   </g>
 </svg>

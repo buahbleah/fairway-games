@@ -77,7 +77,7 @@ Play wants an **AAB**, not the APK — the APK is only for your own testing.
 
 | Asset | Size | Status |
 | --- | --- | --- |
-| App icon | 512×512 PNG | `public/icons/icon-512.png` ✅ |
+| App icon | 512×512 PNG | `public/icons/icon-play-512.png` ✅ |
 | Feature graphic | 1024×500 | **needs making** |
 | Phone screenshots | at least 2, 16:9 or 9:16 | `screenshots/` has 23 at 780×1688 ✅ |
 | Short description | 80 chars | e.g. "Six golf betting games, scored in seconds between two shots." |

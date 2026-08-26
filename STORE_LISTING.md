@@ -125,7 +125,7 @@ inside Settings, whenever you like.
 
 | Asset | File | Status |
 | --- | --- | --- |
-| App icon 512×512 | `public/icons/icon-512.png` | ✅ |
+| App icon 512×512 | `public/icons/icon-play-512.png` | ✅ |
 | Feature graphic 1024×500 | `store/feature-graphic-1024x500.png` | ✅ |
 | Phone screenshots 1080×1920 | `store/screenshot-*.png` (7) | ✅ |
 

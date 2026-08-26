@@ -8,7 +8,7 @@
  * fixes the ratio and gives the listing a caption at the same time.
  */
 import sharp from 'sharp'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync } from 'node:fs'
 
 const OUT = 'store'
 mkdirSync(OUT, { recursive: true })
@@ -32,22 +32,19 @@ const contours = (width, height, opacity = 0.18) => `
              S ${width * 0.93} ${height * 0.4}, ${width * 1.05} ${height * 0.36}"/>
   </g>`
 
-/** Ball and flagstick — the same mark as the app icon. */
-const mark = (cx, cy, r) => `
-  <g>
-    <path d="M${cx + r * 1.15} ${cy + r * 0.95} V ${cy - r * 1.5}"
-          stroke="${CREAM}" stroke-width="${r * 0.13}" stroke-linecap="round"/>
-    <path d="M${cx + r * 1.15} ${cy - r * 1.44} l ${r * 1.0} ${r * 0.32} l ${-r * 1.0} ${r * 0.35} z" fill="${SAND}"/>
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff"/>
-    <g fill="${GREEN_DEEP}" fill-opacity="0.22">
-      <circle cx="${cx - r * 0.44}" cy="${cy - r * 0.36}" r="${r * 0.16}"/>
-      <circle cx="${cx}" cy="${cy - r * 0.53}" r="${r * 0.16}"/>
-      <circle cx="${cx + r * 0.44}" cy="${cy - r * 0.36}" r="${r * 0.16}"/>
-      <circle cx="${cx - r * 0.44}" cy="${cy + r * 0.36}" r="${r * 0.16}"/>
-      <circle cx="${cx}" cy="${cy + r * 0.53}" r="${r * 0.16}"/>
-      <circle cx="${cx + r * 0.44}" cy="${cy + r * 0.36}" r="${r * 0.16}"/>
-    </g>
-  </g>`
+/**
+ * The crest, lifted straight out of the app icon so the listing and the
+ * launcher cannot drift apart. It is drawn there at centre 256,190 with an
+ * outer radius of 130; this moves and scales it.
+ */
+const ICON = readFileSync('public/icons/icon.svg', 'utf8')
+const iconDefs = ICON.slice(ICON.indexOf('<defs>') + 6, ICON.indexOf('</defs>'))
+const iconCrest = ICON.slice(
+  ICON.indexOf('>', ICON.indexOf(' crest -->')) + 1,
+  ICON.lastIndexOf('<!--', ICON.indexOf(' monogram -->')),
+)
+const mark = (cx, cy, r) =>
+  `<g transform="translate(${cx} ${cy}) scale(${(r / 130).toFixed(4)}) translate(-256 -190)">${iconCrest}</g>`
 
 const FONT = "'DejaVu Sans','Bahnschrift','Segoe UI',Arial,sans-serif"
 
@@ -60,10 +57,11 @@ const featureSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height=
       <stop offset="55%" stop-color="#0e2b21"/>
       <stop offset="100%" stop-color="${GREEN_DEEP}"/>
     </linearGradient>
+    ${iconDefs}
   </defs>
   <rect width="1024" height="500" fill="url(#bg)"/>
   ${contours(1024, 500, 0.16)}
-  ${mark(735, 250, 112)}
+  ${mark(770, 250, 168)}
   <text x="72" y="196" font-family="${FONT}" font-size="34" font-weight="700"
         letter-spacing="10" fill="${SAND}">FAIRWAY GAMES</text>
   <text x="72" y="286" font-family="${FONT}" font-size="66" font-weight="700"

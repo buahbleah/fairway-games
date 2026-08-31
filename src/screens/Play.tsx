@@ -23,7 +23,8 @@ import { holeByNumber, scoreName } from '../core/course'
 import { netContextFrom } from '../core/scoring'
 import { strokesOnHole } from '../core/handicap'
 import type { GameContext, HoleEntry, PlayerId, Round } from '../core/types'
-import { WolfPickStage } from '../games/wolf/pickStage'
+import { WolfPickStage, describeWolfPick } from '../games/wolf/pickStage'
+import type { WolfHolePayload } from '../games/wolf'
 import { TeamsStage } from '../games/team_match_play/teamsStage'
 import { DotsStage } from '../games/dots/dotsStage'
 
@@ -94,6 +95,7 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
 
   /* ------------------------------------------------------------- stages */
 
+  const hasPick = game.preScoreStage === 'wolfPick' && !!entry?.game?.mode
   const needsPick = game.preScoreStage === 'wolfPick' && !entry?.game?.mode
   const needsTeams =
     game.preScoreStage === 'teams' &&
@@ -103,6 +105,8 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
   const hasExtras = round.gameId === 'dots'
 
   const [stage, setStage] = useState<Stage>('score')
+  /** Where a re-opened pick should return to, so editing never loses your place. */
+  const [pickReturn, setPickReturn] = useState<Stage>('score')
   useEffect(() => {
     if (entry?.complete) setStage('result')
     else if (needsPick) setStage('pick')
@@ -211,14 +215,49 @@ function PlayRound({ ctrl, round }: { ctrl: RoundController; round: Round }) {
       )}
 
       <div className="stack stack-4" style={{ marginTop: 'var(--s-4)' }}>
+        {/* A mis-tap on the tee should cost a tap to undo, not the whole hole. */}
+        {hasPick && (stage === 'score' || stage === 'result') && (
+          <div className="decisionbar">
+            <span className="grow">
+              <span className="decisionbar__label">Wolf took</span>
+              <span className="decisionbar__value">
+                {describeWolfPick(round, entry?.game as WolfHolePayload)}
+              </span>
+            </span>
+            <button
+              className="btn btn--quiet btn--sm"
+              onClick={() => {
+                setPickReturn(stage)
+                setStage('pick')
+              }}
+            >
+              Change
+            </button>
+          </div>
+        )}
+
         {stage === 'pick' && (
           <WolfPickStage
             round={round}
             computed={computed}
+            current={hasPick ? (entry?.game as WolfHolePayload) : null}
+            onCancel={() => setStage(pickReturn)}
             onPick={(payload) => {
-              patchEntry({ game: { ...(entry?.game ?? {}), ...payload } })
+              // partnerId is written as null rather than left out. Online, the
+              // server merges the hole's game object key by key, so an omitted
+              // key keeps its old value — a switch from "partner" to "lone"
+              // would leave the old partner sitting under it. The engine ignores
+              // a partner on a lone hole either way, but the stored entry should
+              // not say two contradictory things.
+              patchEntry({
+                game: {
+                  ...(entry?.game ?? {}),
+                  partnerId: null,
+                  ...payload,
+                },
+              })
               haptic('medium', store.prefs.haptics)
-              setStage('score')
+              setStage(pickReturn)
             }}
           />
         )}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { HudProps } from '../hudRegistry'
 import { Collapse, Sheet } from '../../ui/components'
+import { Close } from '../../ui/icons'
 import type { MatchLine, Matchup, PressRecord, Segment, Side } from './index'
 
 export function NassauHud({ round, computed, patchGameState }: HudProps) {
@@ -36,6 +37,13 @@ export function NassauHud({ round, computed, patchGameState }: HudProps) {
     if (existing.some((p) => p.id === press.id)) return
     patchGameState({ presses: [...existing, press] }, 'Press')
     setPressOpen(false)
+  }
+
+  const manualPresses = (round.gameState.presses ?? []) as PressRecord[]
+  const manualPressIds = new Set(manualPresses.map((p) => p.id))
+
+  const removePress = (id: string) => {
+    patchGameState({ presses: manualPresses.filter((p) => p.id !== id) }, 'Press removed')
   }
 
   return (
@@ -74,8 +82,20 @@ export function NassauHud({ round, computed, patchGameState }: HudProps) {
           <div className="stack stack-2">
             {presses.map((p) => (
               <div key={p.id} className="row-between t-sm">
-                <span>{p.label}</span>
+                <span className="grow">{p.label}</span>
                 <span style={{ fontWeight: 700 }}>{sideLabel(p)}</span>
+                {/* Only a press somebody tapped can be taken back. The automatic
+                    ones are derived from the score, so there is nothing to undo
+                    — they reappear the moment the fold runs again. */}
+                {manualPressIds.has(p.id) && (
+                  <button
+                    className="iconbtn iconbtn--ghost"
+                    aria-label={`Remove ${p.label}`}
+                    onClick={() => removePress(p.id)}
+                  >
+                    <Close size={16} />
+                  </button>
+                )}
               </div>
             ))}
           </div>

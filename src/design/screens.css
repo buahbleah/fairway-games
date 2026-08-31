@@ -549,6 +549,34 @@
   border-style: dashed;
 }
 
+/* The choice already made, with a way back to it. Sits above the scorecard so
+   a wrong tap on the tee is visible for the whole hole, not buried. */
+.decisionbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-2) var(--s-2) var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.decisionbar__label {
+  display: block;
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.decisionbar__value {
+  display: block;
+  font-weight: 700;
+}
+
+.wolfpick.is-selected {
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
 .wolfbadge {
   display: inline-flex;
   align-items: center;

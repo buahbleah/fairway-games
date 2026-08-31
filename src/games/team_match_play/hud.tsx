@@ -21,6 +21,10 @@ export function TeamMatchHud({ round, computed, patchEntry, patchGameState }: Hu
     setConcedeOpen(false)
   }
 
+  const concededBy = (round.gameState.matchConcededBy ?? null) as Side | null
+  const conceededHoleBy = (round.entries.find((e) => e.hole === round.currentHole)?.game
+    ?.conceded ?? null) as Side | null
+
   return (
     <div className="stack stack-3">
       <div className="teamhead">
@@ -60,6 +64,42 @@ export function TeamMatchHud({ round, computed, patchEntry, patchGameState }: Hu
         <button className="btn btn--quiet btn--block" onClick={() => setConcedeOpen(true)}>
           Concede
         </button>
+      )}
+
+      {/* Conceding is one tap and ends the match, so it needs a way back. A
+          concession the players meant stays put; a mis-tap does not. */}
+      {concededBy && (
+        <div className="decisionbar">
+          <span className="grow">
+            <span className="decisionbar__label">Match conceded by</span>
+            <span className="decisionbar__value">
+              {concededBy === 'A' ? teams[0].name : teams[1].name}
+            </span>
+          </span>
+          <button
+            className="btn btn--quiet"
+            onClick={() => patchGameState({ matchConcededBy: null }, 'Concession withdrawn')}
+          >
+            Undo
+          </button>
+        </div>
+      )}
+
+      {conceededHoleBy && (
+        <div className="decisionbar">
+          <span className="grow">
+            <span className="decisionbar__label">Hole {round.currentHole} conceded by</span>
+            <span className="decisionbar__value">
+              {conceededHoleBy === 'A' ? teams[0].name : teams[1].name}
+            </span>
+          </span>
+          <button
+            className="btn btn--quiet"
+            onClick={() => patchEntry({ game: { conceded: null } }, 'Hole concession withdrawn')}
+          >
+            Undo
+          </button>
+        </div>
       )}
 
       <Sheet open={concedeOpen} onClose={() => setConcedeOpen(false)} title="Concede">

@@ -14,10 +14,10 @@ const ROSTER = {
   version: 1,
   rounds: [],
   roster: [
-    { id: 'p1', name: 'Marc', handicapIndex: 11.4, colorIndex: 0 },
-    { id: 'p2', name: 'Phil', handicapIndex: 18.2, colorIndex: 1 },
-    { id: 'p3', name: 'Mike', handicapIndex: 6.1, colorIndex: 2 },
-    { id: 'p4', name: 'John', handicapIndex: 24, colorIndex: 3 },
+    { id: 'p1', name: 'Phil', handicapIndex: 11.4, colorIndex: 0 },
+    { id: 'p2', name: 'Bitzi', handicapIndex: 18.2, colorIndex: 1 },
+    { id: 'p3', name: 'Thierry', handicapIndex: 6.1, colorIndex: 2 },
+    { id: 'p4', name: 'Nico', handicapIndex: 24, colorIndex: 3 },
   ],
   presets: [],
   prefs: { theme: 'light', contrast: 'normal', haptics: true, currency: 'CHF' },
@@ -123,7 +123,7 @@ await shot('05-wolf-pick')
 
 // 6 wolf result
 await page.evaluate(() => {
-  const b = [...document.querySelectorAll('button.wolfpick')].find((x) => x.textContent.includes('Phil'))
+  const b = [...document.querySelectorAll('button.wolfpick')].find((x) => x.textContent.includes('Bitzi'))
   b?.click()
 })
 await sleep(300)

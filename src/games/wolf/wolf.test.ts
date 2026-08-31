@@ -192,3 +192,27 @@ describe('Wolf — round result', () => {
     expect(result.lines.join(' ')).toContain('1 Lone Wolf hole')
   })
 })
+
+describe('Wolf — changing a pick', () => {
+  /**
+   * The pick screen can be re-opened, so an entry can arrive carrying the
+   * partner from the choice that was replaced. Going alone has to mean alone.
+   */
+  it('ignores a partner left over from an earlier pick', () => {
+    const c = ctx()
+    const stale = entry(1, players, [4, 3, 5, 5], { wolfId: marc, mode: 'lone', partnerId: phil })
+    const clean = entry(1, players, [4, 3, 5, 5], { wolfId: marc, mode: 'lone' })
+    expect(totals(wolfGame.compute(c, [stale]).standings)).toEqual(
+      totals(wolfGame.compute(c, [clean]).standings),
+    )
+  })
+
+  it('scores the hole by whichever pick is stored last', () => {
+    const c = ctx()
+    // Marc's 4 carried by Phil's 3 wins the hole; alone, Marc's 4 loses to it.
+    const asPair = entry(1, players, [4, 3, 5, 5], { wolfId: marc, mode: 'partner', partnerId: phil })
+    const alone = entry(1, players, [4, 3, 5, 5], { wolfId: marc, mode: 'lone' })
+    expect(totals(wolfGame.compute(c, [asPair]).standings)[marc]).toBe(2)
+    expect(totals(wolfGame.compute(c, [alone]).standings)[marc]).toBe(0)
+  })
+})

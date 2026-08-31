@@ -68,6 +68,12 @@ describe('Reading a course from the API', () => {
   it('reads the club and the course as one name', () => {
     expect(toExternalCourse(payload)?.clubName).toBe('Golfclub Winterthur')
     expect(buildCourse(payload, 'male:0')!.course.name).toBe('Golfclub Winterthur · Championship')
+
+    // Clubs often file the course under the club's own name again.
+    const doubled = {
+      course: { ...payload.course, course_name: 'Golfclub Winterthur' },
+    }
+    expect(buildCourse(doubled, 'male:0')!.course.name).toBe('Golfclub Winterthur')
   })
 })
 
@@ -112,6 +118,44 @@ describe('Building the card to play off', () => {
     const broken = { course: { ...payload.course, tees: { male: [{ tee_name: 'Blue', holes: dup }] } } }
     const { course } = buildCourse(broken, 'male:0')!
     expect(new Set(course.holes.map((h) => h.strokeIndex)).size).toBe(18)
+  })
+
+  it('keeps a nine-hole card that carries its half of an eighteen', () => {
+    // Real nine-hole cards are often indexed 1,3,5..17. strokesOnHole ranks the
+    // holes being played, so these allocate shots exactly as 1..9 would.
+    const odd = [1, 3, 5, 7, 9, 11, 13, 15, 17]
+    const card = {
+      course: {
+        ...payload.course,
+        tees: {
+          male: [
+            {
+              tee_name: 'White',
+              slope_rating: 123,
+              course_rating: 34.4,
+              holes: odd.map((handicap) => ({ par: 4, handicap })),
+            },
+          ],
+        },
+      },
+    }
+    const { course, warnings } = buildCourse(card, 'male:0')!
+    expect(warnings).toEqual([])
+    expect(course.holes.map((h) => h.strokeIndex)).toEqual(odd)
+  })
+
+  it('replaces a card whose stroke indexes are simply absent', () => {
+    // Winterberg files pars but leaves every handicap blank.
+    const blank = {
+      course: {
+        ...payload.course,
+        tees: { male: [{ tee_name: 'White', slope_rating: 123, course_rating: 34.4,
+          holes: Array.from({ length: 9 }, () => ({ par: 4, handicap: '' })) }] },
+      },
+    }
+    const { course, warnings } = buildCourse(blank, 'male:0')!
+    expect(warnings[0]).toMatch(/no usable stroke indexes/)
+    expect(new Set(course.holes.map((h) => h.strokeIndex)).size).toBe(9)
   })
 
   it('carries a nine-hole card through as nine holes', () => {

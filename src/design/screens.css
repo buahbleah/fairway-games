@@ -551,6 +551,41 @@
 
 /* The choice already made, with a way back to it. Sits above the scorecard so
    a wrong tap on the tee is visible for the whole hole, not buried. */
+/* Typing in a scorecard: eighteen rows of two small numbers. Kept as a grid so
+   the columns line up and the eye can check a stroke-index column at a glance. */
+.cardgrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+.cardgrid__head,
+.cardgrid__row {
+  display: grid;
+  grid-template-columns: 3rem 1fr 1fr;
+  gap: var(--s-2);
+  align-items: center;
+}
+.cardgrid__head {
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: var(--s-1);
+}
+.cardgrid__hole {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.input--tight {
+  min-height: var(--tap-min);
+  padding: 0 var(--s-2);
+  text-align: center;
+}
+.input.is-bad {
+  border-color: var(--bad);
+}
+
 .decisionbar {
   display: flex;
   align-items: center;

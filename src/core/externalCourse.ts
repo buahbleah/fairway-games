@@ -116,12 +116,18 @@ function teeAt(course: any, teeId: string): any {
 
 /**
  * Stroke indexes decide where shots are given, so they matter more than par.
- * A valid card uses each of 1..n exactly once; anything else — all zeroes, a
- * repeated value, a gap — is replaced wholesale rather than half-trusted.
+ *
+ * Only the ordering is checked, not the numbers themselves: strokesOnHole ranks
+ * the holes actually being played, so a nine-hole card carrying its half of an
+ * eighteen — 1, 3, 5 … 17 — allocates shots exactly like 1 … 9 would. Rejecting
+ * those would throw away real data and replace it with a guess.
+ *
+ * What cannot be used is a card with no ordering in it at all: every value
+ * missing or zero, or the same rank given to two holes.
  */
 function strokeIndexesFrom(holes: any[]): number[] | null {
   const raw = holes.map((h) => Number(h?.handicap))
-  if (raw.some((v) => !Number.isInteger(v) || v < 1 || v > holes.length)) return null
+  if (raw.some((v) => !Number.isInteger(v) || v < 1)) return null
   if (new Set(raw).size !== holes.length) return null
   return raw
 }
@@ -169,9 +175,14 @@ export function buildCourse(payload: any, teeId: string): BuiltCourse | null {
     warnings.push('No course rating on this tee, so par stands in for it.')
   }
 
-  const name = external.courseName
-    ? `${external.clubName} · ${external.courseName}`
-    : external.clubName
+  // Many clubs file the course under its own name again. "Pebble Beach Golf
+  // Links · Pebble Beach Golf Links" helps nobody.
+  const sameName =
+    external.courseName.toLowerCase().trim() === external.clubName.toLowerCase().trim()
+  const name =
+    external.courseName && !sameName
+      ? `${external.clubName} · ${external.courseName}`
+      : external.clubName
 
   return {
     course: {

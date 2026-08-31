@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { GameId, HoleEntry, Player, Round, SettingsValues } from '../core/types'
+import type { Course, GameId, HoleEntry, Player, Round, SettingsValues } from '../core/types'
 import { getGame } from '../games/registry'
 import { defaultCourse } from '../core/course'
 
@@ -47,6 +47,8 @@ interface PersistedState {
   version: 1
   rounds: Round[]
   roster: Player[]
+  /** Cards typed in by hand, kept so a home course is entered once. */
+  courses: Course[]
   presets: GamePreset[]
   prefs: Prefs
   undo: Record<string, UndoSnapshot[]>
@@ -55,7 +57,7 @@ interface PersistedState {
 const DEFAULT_PREFS: Prefs = { theme: 'system', contrast: 'normal', haptics: true, currency: 'CHF' }
 
 function emptyState(): PersistedState {
-  return { version: 1, rounds: [], roster: [], presets: [], prefs: DEFAULT_PREFS, undo: {} }
+  return { version: 1, rounds: [], roster: [], courses: [], presets: [], prefs: DEFAULT_PREFS, undo: {} }
 }
 
 function load(): PersistedState {
@@ -91,6 +93,7 @@ export function uid(prefix = 'id'): string {
 interface StoreValue {
   rounds: Round[]
   roster: Player[]
+  courses: Course[]
   presets: GamePreset[]
   prefs: Prefs
   activeRound: Round | null
@@ -124,6 +127,9 @@ interface StoreValue {
   saveRosterPlayer: (player: Player) => void
   removeRosterPlayer: (id: string) => void
 
+  /** A card typed in by hand, so a home course is entered once and reused. */
+  saveCourse: (course: Course) => void
+  deleteCourse: (id: string) => void
   savePreset: (preset: Omit<GamePreset, 'id' | 'createdAt'>) => GamePreset
   deletePreset: (id: string) => void
 
@@ -179,6 +185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       rounds: state.rounds,
       roster: state.roster,
+      courses: state.courses ?? [],
       presets: state.presets,
       prefs: state.prefs,
       activeRound: state.rounds.find((r) => r.status === 'active') ?? null,
@@ -413,6 +420,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       removeRosterPlayer: (id) => {
         mutate((s) => ({ ...s, roster: s.roster.filter((p) => p.id !== id) }))
+      },
+
+      saveCourse: (course) => {
+        mutate((s) => ({
+          ...s,
+          courses: (s.courses ?? []).some((c) => c.id === course.id)
+            ? (s.courses ?? []).map((c) => (c.id === course.id ? course : c))
+            : [...(s.courses ?? []), course],
+        }))
+      },
+
+      deleteCourse: (id) => {
+        mutate((s) => ({ ...s, courses: (s.courses ?? []).filter((c) => c.id !== id) }))
       },
 
       savePreset: (preset) => {

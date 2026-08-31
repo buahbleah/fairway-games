@@ -139,3 +139,30 @@ CREATE TRIGGER hole_entries_bump
 CREATE TRIGGER round_players_bump
   AFTER INSERT OR UPDATE OR DELETE ON round_players
   FOR EACH ROW EXECUTE FUNCTION bump_round_version();
+
+-- ------------------------------------------------------------- course lookup
+
+/*
+ * GolfCourseAPI's free tier allows a few dozen calls a day, which is nothing
+ * when a group of four all open Round Setup on the first tee. Everything we
+ * fetch is kept here and served from here; the API is only ever asked about
+ * something nobody has looked up before.
+ *
+ * One table for both kinds of lookup, keyed 'search:<query>' or 'course:<id>'.
+ */
+CREATE TABLE course_cache (
+  key         text PRIMARY KEY,
+  payload     jsonb NOT NULL,
+  fetched_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX course_cache_fetched_idx ON course_cache (fetched_at);
+
+/*
+ * How many calls actually left for the API on a given UTC day, so the quota
+ * cannot be burned through by a loop or a curious stranger. One row per day.
+ */
+CREATE TABLE course_api_usage (
+  day    date PRIMARY KEY,
+  calls  integer NOT NULL DEFAULT 0
+);

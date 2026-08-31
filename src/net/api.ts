@@ -247,6 +247,17 @@ export const api = {
   },
 
   friends: () => get<FriendsPayload>('/friends'),
+
+  /**
+   * Course lookup. Both answers come back as the course database's own JSON —
+   * shaping it is externalCourse.ts's job, and keeping the raw payload here
+   * means the cache on the server never has to be invalidated when our parsing
+   * changes.
+   */
+  searchCourses: (query: string) =>
+    get<{ results: any; cached: boolean }>(`/courses?q=${encodeURIComponent(query)}`),
+  course: (id: string) =>
+    get<{ course: any; cached: boolean }>(`/courses?id=${encodeURIComponent(id)}`),
   addFriend: (email: string) => post<{ status: string; hasAccount: boolean }>('/friends', { email }),
   respondFriend: (id: string, action: 'accept' | 'decline') =>
     post<{ status: string }>('/friends/respond', { id, action }),

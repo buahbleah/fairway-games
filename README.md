@@ -76,11 +76,25 @@ Postgres.
 
 1. Import the repository at [vercel.com/new](https://vercel.com/new). Vercel
    detects Vite; `vercel.json` pins the function region next to the database.
-2. Add one environment variable — `DATABASE_URL`, the Neon connection string —
-   for Production, Preview and Development.
+2. Add the environment variables below for Production, Preview and Development.
 3. Deploy. Every push to `main` redeploys from then on.
 
+| Variable | Required | What it does |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | Neon connection string. |
+| `GOLF_COURSE_API_KEY` | no | A [GolfCourseAPI](https://golfcourseapi.com) key. Without it, Round Setup falls back to a standard card and says so. |
+| `GOLF_COURSE_API_DAILY_BUDGET` | no | How many calls may leave for that API in a day. Defaults to 40, under the free tier's 50, so a bad day never costs the whole allowance. |
+
 The schema lives in `db/schema.sql`. Run it once against a fresh database.
+
+### Why the course lookup is cached
+
+The free tier allows a few dozen calls a day **across every user of the app** —
+a number four players opening Round Setup on the same tee would spend in a
+minute. So `api/courses` answers from a Postgres cache first and only asks the
+API about something nobody has looked up before, counting and capping the calls
+that do leave. Parsing lives in `src/core/externalCourse.ts` and the raw payload
+is what gets cached, so the cache never needs clearing when the parsing changes.
 
 ## Installing on a phone
 

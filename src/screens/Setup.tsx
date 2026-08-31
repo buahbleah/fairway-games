@@ -10,7 +10,8 @@ import { GAME_MARKS, Check, Handicap as HandicapIcon, Plus, Trash } from '../ui/
 import { SettingsForm } from './SettingsForm'
 import { applyHoleSet, defaultCourse, holeSetLabel, type HoleSet } from '../core/course'
 import { courseHandicap, playingHandicaps } from '../core/handicap'
-import type { GameId, Player, SettingsValues } from '../core/types'
+import type { Course, GameId, Player, SettingsValues } from '../core/types'
+import { CoursePicker } from './CoursePicker'
 
 const STEP_TITLES = ['Game', 'Players', 'Settings', 'Course', 'Ready']
 
@@ -49,7 +50,18 @@ export function SetupScreen() {
   const [leagueId, setLeagueId] = useState<string | null>(initialLeague)
   const [playOnline, setPlayOnline] = useState(!!account)
 
-  const course = useMemo(() => applyHoleSet(defaultCourse(), holeSet), [holeSet])
+  /**
+   * The card the round is played off. Without a real one, stroke indexes are a
+   * plausible guess and the shots handicaps give out land on the wrong holes.
+   */
+  const [pickedCourse, setPickedCourse] = useState<Course | null>(null)
+  const [courseWarnings, setCourseWarnings] = useState<string[]>([])
+  /** A nine-hole card has no front and back to choose between. */
+  const isNineHoleCard = (pickedCourse?.holes.length ?? 18) <= 9
+  const course = useMemo(
+    () => applyHoleSet(pickedCourse ?? defaultCourse(), isNineHoleCard ? 'full18' : holeSet),
+    [pickedCourse, holeSet, isNineHoleCard],
+  )
   const playerError = game.validatePlayers(players.length)
   const gamePresets = store.presets.filter((p) => p.gameId === gameId)
 
@@ -447,27 +459,59 @@ export function SetupScreen() {
         {step === 4 && (
           <section className="stack stack-4 stage">
             <div>
-              <h2 className="stage__prompt">Which holes?</h2>
-              <p className="stage__hint">Nine or eighteen.</p>
+              <h2 className="stage__prompt">Where are you playing?</h2>
+              <p className="stage__hint">
+                {handicapsOn
+                  ? 'Find the course and shots land on its real hardest holes.'
+                  : 'Optional — but it makes handicaps land on the right holes.'}
+              </p>
             </div>
 
-            <div className="stack stack-2">
-              {(['full18', 'front9', 'back9'] as HoleSet[]).map((set) => (
-                <button
-                  key={set}
-                  className={`playerpick${holeSet === set ? ' is-selected' : ''}`}
-                  onClick={() => setHoleSet(set)}
-                >
-                  <span className="playerpick__check" aria-hidden>
-                    <Check size={16} />
-                  </span>
-                  <span className="grow" style={{ fontWeight: 700 }}>
-                    {holeSetLabel(set)}
-                  </span>
-                  <span className="t-sm muted">{set === 'full18' ? '18 holes' : '9 holes'}</span>
-                </button>
-              ))}
-            </div>
+            <CoursePicker
+              value={pickedCourse}
+              onClear={() => {
+                setPickedCourse(null)
+                setCourseWarnings([])
+              }}
+              onChange={(next, warnings) => {
+                setPickedCourse(next)
+                setCourseWarnings(warnings)
+                if (next.holes.length <= 9) setHoleSet('full18')
+              }}
+            />
+
+            {courseWarnings.map((w) => (
+              <p key={w} className="field__help" style={{ color: 'var(--warn, var(--accent))' }}>
+                {w}
+              </p>
+            ))}
+
+            {!isNineHoleCard && (
+              <>
+                <div>
+                  <h2 className="stage__prompt">Which holes?</h2>
+                  <p className="stage__hint">Nine or eighteen.</p>
+                </div>
+
+                <div className="stack stack-2">
+                  {(['full18', 'front9', 'back9'] as HoleSet[]).map((set) => (
+                    <button
+                      key={set}
+                      className={`playerpick${holeSet === set ? ' is-selected' : ''}`}
+                      onClick={() => setHoleSet(set)}
+                    >
+                      <span className="playerpick__check" aria-hidden>
+                        <Check size={16} />
+                      </span>
+                      <span className="grow" style={{ fontWeight: 700 }}>
+                        {holeSetLabel(set)}
+                      </span>
+                      <span className="t-sm muted">{set === 'full18' ? '18 holes' : '9 holes'}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
 
             {(gameId === 'vegas' || gameId === 'team_match_play' || (gameId === 'nassau' && players.length === 4)) &&
               players.length === 4 && (
@@ -524,8 +568,28 @@ export function SetupScreen() {
               </div>
               <hr className="divider" />
               <div className="row-between">
+                <span className="label">Course</span>
+                <span style={{ fontWeight: 700, textAlign: 'right' }}>
+                  {pickedCourse ? (
+                    <>
+                      {pickedCourse.name}
+                      {pickedCourse.teeName && (
+                        <span className="t-sm muted" style={{ display: 'block', fontWeight: 400 }}>
+                          {pickedCourse.teeName} tees
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    'Standard card'
+                  )}
+                </span>
+              </div>
+              <hr className="divider" />
+              <div className="row-between">
                 <span className="label">Holes</span>
-                <span style={{ fontWeight: 700 }}>{holeSetLabel(holeSet)}</span>
+                <span style={{ fontWeight: 700 }}>
+                  {isNineHoleCard ? '9 Holes' : holeSetLabel(holeSet)}
+                </span>
               </div>
               <hr className="divider" />
               <div className="row-between">

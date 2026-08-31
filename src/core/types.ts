@@ -35,6 +35,10 @@ export interface Course {
   /** Course & slope rating, used to convert Handicap Index -> Course Handicap. */
   courseRating?: number
   slopeRating?: number
+  /** GolfCourseAPI id, when the card came from there rather than being typed. */
+  externalId?: string | null
+  /** Which tee the rating and the card belong to — "Yellow", "Blue". */
+  teeName?: string | null
 }
 
 /* ------------------------------------------------------------------ settings */

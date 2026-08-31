@@ -94,7 +94,9 @@ export default handler(['GET'], async (req, res) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
 
   if (id) {
-    if (!/^[0-9]+$/.test(id)) throw new HttpError(400, 'That is not a course id.')
+    // Ids are opaque short strings like "3j4b4ar8", not numbers. Constrained
+    // anyway, because this value is pasted into the upstream URL.
+    if (!/^[A-Za-z0-9_-]{1,64}$/.test(id)) throw new HttpError(400, 'That is not a course id.')
     const k = key('course', id)
     const hit = await cached(k, COURSE_TTL_DAYS)
     if (hit) {
